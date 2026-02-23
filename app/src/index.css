@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --burgundy: #722F37;
+  --burgundy-light: #8B3A42;
+  --burgundy-dark: #5A252C;
+  --cream: #FFF8F0;
+  --cream-dark: #F0E6D9;
+  --gold: #C4A35A;
+  --gold-light: #D4B76E;
+  --gold-dark: #A8893C;
+  --charcoal: #2D2D2D;
+  --charcoal-light: #555555;
+  --wine-red: #8B1A2B;
+  --wine-white: #D4A843;
+  --wine-rose: #E8A0B4;
+  --wine-sparkling: #B8C4D0;
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: var(--cream);
+  color: var(--charcoal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', 'Georgia', serif;
+  line-height: 1.2;
+}
+
+::selection {
+  background-color: rgba(114, 47, 55, 0.2);
+  color: var(--charcoal);
+}
+
+/* ─── Mobile-First Input Sizing (prevents iOS zoom on focus) ─── */
+input, textarea, select {
+  font-size: 16px !important;
+  min-height: 48px;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+}
+
+a, button {
+  transition: all 0.2s ease;
+}
+
+/* ─── WCAG Touch Targets: ≥44px on touch devices ─── */
+@media (pointer: coarse) {
+  a[href], button, [role="button"], input[type="button"], input[type="submit"],
+  select, [onclick] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ─── Safe Area Padding (notched phones) ─── */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-x {
+  padding-left: max(env(safe-area-inset-left, 0px), 0px);
+  padding-right: max(env(safe-area-inset-right, 0px), 0px);
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--cream);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--burgundy);
+  border-radius: 4px;
+}
+
+/* Hide scrollbar for filter chips on mobile */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Wine type gradient backgrounds */
+.wine-gradient-red {
+  background: linear-gradient(135deg, #5A1A2A 0%, #8B1A2B 40%, #A0344A 100%);
+}
+.wine-gradient-white {
+  background: linear-gradient(135deg, #C4A35A 0%, #D4B76E 40%, #E8D5A0 100%);
+}
+.wine-gradient-rose {
+  background: linear-gradient(135deg, #C87090 0%, #E8A0B4 40%, #F0C8D8 100%);
+}
+.wine-gradient-sparkling {
+  background: linear-gradient(135deg, #8898A8 0%, #B8C4D0 40%, #D8E0E8 100%);
+}
+.wine-gradient-default {
+  background: linear-gradient(135deg, #5A252C 0%, #722F37 40%, #8B3A42 100%);
+}
+
+/* Bottle silhouette shape */
+.bottle-shape {
+  clip-path: polygon(40% 0%, 60% 0%, 60% 12%, 65% 15%, 65% 25%, 58% 30%, 58% 95%, 62% 100%, 38% 100%, 42% 95%, 42% 30%, 35% 25%, 35% 15%, 40% 12%);
+}
+
+/* Rating color coding */
+.rating-excellent { color: #1B7A3D; background-color: #E8F5E9; }
+.rating-good { color: #8B6914; background-color: #FFF8E1; }
+.rating-average { color: #C0392B; background-color: #FFEBEE; }
+
+/* Taste bar animation */
+.taste-bar-fill {
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Shimmer for loading placeholders */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #f0e6d9 25%, #fff8f0 50%, #f0e6d9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Pulse for scan button */
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+.pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@theme {
+  --color-burgundy: #722F37;
+  --color-burgundy-light: #8B3A42;
+  --color-burgundy-dark: #5A252C;
+  --color-cream: #FFF8F0;
+  --color-cream-dark: #F0E6D9;
+  --color-gold: #C4A35A;
+  --color-gold-light: #D4B76E;
+  --color-gold-dark: #A8893C;
+  --color-charcoal: #2D2D2D;
+  --color-charcoal-light: #555555;
+  --color-wine-red: #8B1A2B;
+  --color-wine-white: #D4A843;
+  --color-wine-rose: #E8A0B4;
+  --color-wine-sparkling: #B8C4D0;
+}
