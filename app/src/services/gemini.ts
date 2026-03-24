@@ -72,3 +72,47 @@ export async function getWineSuggestions(query: string): Promise<string[]> {
     return [];
   }
 }
+
+export async function scanWineLabel(imageBase64: string, mimeType: string = 'image/jpeg'): Promise<Wine | null> {
+  if (!API_KEY) throw new Error('AI not configured');
+  try {
+    const model = genAI.getGenerativeModel({ model: MODEL });
+    const prompt = `You are a wine expert analyzing a wine label photo. Extract all visible information and return a JSON object with:
+    - name: string (full wine name)
+    - producer: string (winery/producer)
+    - region: string
+    - country: string
+    - grape: string
+    - year: number or null
+    - tastingNotes: string (2-3 sentences based on your wine knowledge)
+    - type: "red"|"white"|"rosé"|"sparkling"|"dessert"|"orange"
+    - price: number in BRL approximate or null
+    - rating: number 1.0-5.0 or null
+    - tasteProfile: { body: 0-100, sweetness: 0-100, tannin: 0-100, acidity: 0-100 }
+    Return ONLY valid JSON.`;
+
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: imageBase64, mimeType } }
+    ]);
+    const text = result.response.text().trim().replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const data = JSON.parse(text);
+    return {
+      id: uuidv4(),
+      name: data.name || 'Unknown Wine',
+      producer: data.producer,
+      region: data.region,
+      country: data.country,
+      grape: data.grape,
+      year: data.year,
+      tastingNotes: data.tastingNotes,
+      type: data.type || 'red',
+      price: data.price || undefined,
+      rating: data.rating || undefined,
+      tasteProfile: data.tasteProfile || undefined,
+    };
+  } catch (error) {
+    console.error('Scan error:', error);
+    return null;
+  }
+}

@@ -55,9 +55,17 @@ export interface TastingEvent {
   createdAt: string;
 }
 
+export interface WineTastingNote {
+  aroma: string;
+  palate: string;
+  finish: string;
+  rating: number; // 1-5 stars
+}
+
 export interface MemberRanking {
   memberId: string;
   wineOrder: string[]; // wine IDs in ranked order (index 0 = 1st place)
+  notes?: Record<string, WineTastingNote>; // wineId → notes
 }
 
 export interface BordaResult {

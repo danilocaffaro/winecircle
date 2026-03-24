@@ -223,7 +223,7 @@ async function runTests() {
   record(evHtml.includes('Danilo') || evHtml.includes('Marina') || evHtml.includes('Ricardo'), 'F5-03 Membros do evento listados', f5a);
 
   // Verifica se botão de resultados/ranking existe
-  const hasResultsBtn = await page.locator('button:has-text("Results"), a:has-text("Results"), button:has-text("Resultado"), text=Borda').count();
+  const hasResultsBtn = await page.getByText('Results').count() + await page.getByText('Borda').count() + await page.getByText('Resultado').count();
   record(hasResultsBtn > 0 || evHtml.includes('completed'), 'F5-04 Status "completed" ou botão Results', f5a);
 
   // ════════════════════════════════════════════════════════════════════════════

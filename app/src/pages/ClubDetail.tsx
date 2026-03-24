@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
 import { getClub, deleteClub, getEventsByClub, saveClub } from '../services/storage';
+import { calculateBordaCount } from '../utils/algorithms';
 
 export const ClubDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -82,6 +83,22 @@ export const ClubDetail: React.FC = () => {
     toast.success(`${member.name} removed`);
   };
 
+  const completedEvents = events.filter(e => e.status === 'completed');
+  const allWines = completedEvents.flatMap(e => e.wines);
+  const uniqueWines = [...new Map(allWines.map(w => [w.name, w])).values()];
+  const allCountries = allWines.map(w => w.country).filter(Boolean);
+  const topCountry = allCountries.length
+    ? [...allCountries.reduce((m, c) => m.set(c!, (m.get(c!) || 0) + 1), new Map<string, number>())]
+        .sort((a, b) => b[1] - a[1])[0]?.[0]
+    : null;
+  const allResults = completedEvents.flatMap(e => calculateBordaCount(e.wines, e.rankings));
+  const topWine = allResults.length
+    ? [...allResults.reduce((m, r) => {
+        const prev = m.get(r.wine.name) || { ...r, totalPoints: 0 };
+        return m.set(r.wine.name, { ...prev, totalPoints: prev.totalPoints + r.totalPoints });
+      }, new Map())].sort((a, b) => b[1].totalPoints - a[1].totalPoints)[0]?.[1]
+    : null;
+
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
       {/* Back link — 44px touch target */}
@@ -113,6 +130,37 @@ export const ClubDetail: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* ── Stats cards ── */}
+      {completedEvents.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="card p-4 text-center">
+            <p className="text-2xl font-black text-burgundy" style={{ fontFamily: 'Playfair Display, serif' }}>{completedEvents.length}</p>
+            <p className="text-[11px] text-charcoal-muted mt-0.5 font-medium">Tastings</p>
+          </div>
+          <div className="card p-4 text-center">
+            <p className="text-2xl font-black text-burgundy" style={{ fontFamily: 'Playfair Display, serif' }}>{uniqueWines.length}</p>
+            <p className="text-[11px] text-charcoal-muted mt-0.5 font-medium">Wines Tasted</p>
+          </div>
+          {topWine && (
+            <div className="card p-4 col-span-2">
+              <p className="section-label mb-1">🏆 All-Time Favorite</p>
+              <p className="font-semibold text-burgundy text-sm truncate">{topWine.wine.name}</p>
+              {topWine.wine.producer && <p className="text-xs text-charcoal-muted truncate">{topWine.wine.producer}</p>}
+            </div>
+          )}
+          {topCountry && (
+            <div className="card p-4">
+              <p className="section-label mb-1">🌍 Top Country</p>
+              <p className="font-semibold text-sm text-charcoal">{topCountry}</p>
+            </div>
+          )}
+          <div className="card p-4">
+            <p className="section-label mb-1">👥 Members</p>
+            <p className="text-2xl font-black text-burgundy" style={{ fontFamily: 'Playfair Display, serif' }}>{club.members.length}</p>
+          </div>
+        </div>
+      )}
 
       {/* Members section with inline add */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-cream-dark">
