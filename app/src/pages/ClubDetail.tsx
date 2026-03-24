@@ -10,7 +10,9 @@ export const ClubDetail: React.FC = () => {
   const [club, setClub] = useState(() => id ? getClub(id) : undefined);
   const events = id ? getEventsByClub(id) : [];
   const [newMemberName, setNewMemberName] = useState('');
-  const [showAddMember, setShowAddMember] = useState(false);
+  const [newMemberPix, setNewMemberPix] = useState('');
+  const [editingPixId, setEditingPixId] = useState<string | null>(null);
+  const [editingPixValue, setEditingPixValue] = useState('');
 
   if (!club) {
     return (
@@ -44,12 +46,26 @@ export const ClubDetail: React.FC = () => {
     }
     const updatedClub = {
       ...club,
-      members: [...club.members, { id: uuidv4(), name: trimmed }],
+      members: [...club.members, { id: uuidv4(), name: trimmed, pixKey: newMemberPix.trim() || undefined }],
     };
     saveClub(updatedClub);
     setClub(updatedClub);
     setNewMemberName('');
+    setNewMemberPix('');
     toast.success(`${trimmed} added!`);
+  };
+
+  const saveMemberPix = (memberId: string) => {
+    const updatedClub = {
+      ...club,
+      members: club.members.map(m =>
+        m.id === memberId ? { ...m, pixKey: editingPixValue.trim() || undefined } : m
+      ),
+    };
+    saveClub(updatedClub);
+    setClub(updatedClub);
+    setEditingPixId(null);
+    toast.success('Chave Pix salva!');
   };
 
   const removeMember = (memberId: string) => {
@@ -113,29 +129,39 @@ export const ClubDetail: React.FC = () => {
 
         {/* Inline add member — 48px inputs */}
         {showAddMember && (
-          <div className="flex gap-2 mb-3 p-3 bg-cream rounded-xl border border-cream-dark">
+          <div className="flex flex-col gap-2 mb-3 p-3 bg-cream rounded-xl border border-cream-dark">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newMemberName}
+                onChange={e => setNewMemberName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addMember();
+                  }
+                }}
+                placeholder="Member name"
+                className="flex-1 px-4 py-3 rounded-xl border border-cream-dark bg-white text-charcoal placeholder-charcoal-light/40 focus:ring-2 focus:ring-burgundy/30 focus:border-burgundy transition-shadow"
+                style={{ fontSize: '16px', minHeight: '48px' }}
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={addMember}
+                className="bg-burgundy text-cream px-5 py-3 rounded-xl font-semibold text-sm hover:bg-burgundy-light transition-colors shadow-sm min-h-[48px]"
+              >
+                Add
+              </button>
+            </div>
             <input
               type="text"
-              value={newMemberName}
-              onChange={e => setNewMemberName(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  addMember();
-                }
-              }}
-              placeholder="Member name"
-              className="flex-1 px-4 py-3 rounded-xl border border-cream-dark bg-white text-charcoal placeholder-charcoal-light/40 focus:ring-2 focus:ring-burgundy/30 focus:border-burgundy transition-shadow"
-              style={{ fontSize: '16px', minHeight: '48px' }}
-              autoFocus
+              value={newMemberPix}
+              onChange={e => setNewMemberPix(e.target.value)}
+              placeholder="Chave Pix (opcional) — CPF, e-mail, telefone ou chave aleatória"
+              className="w-full px-4 py-2.5 rounded-xl border border-cream-dark bg-white text-charcoal placeholder-charcoal-light/40 focus:ring-2 focus:ring-burgundy/30 focus:border-burgundy transition-shadow"
+              style={{ fontSize: '14px', minHeight: '44px' }}
             />
-            <button
-              type="button"
-              onClick={addMember}
-              className="bg-burgundy text-cream px-5 py-3 rounded-xl font-semibold text-sm hover:bg-burgundy-light transition-colors shadow-sm min-h-[48px]"
-            >
-              Add
-            </button>
           </div>
         )}
 
@@ -155,22 +181,60 @@ export const ClubDetail: React.FC = () => {
         ) : (
           <div className="space-y-2">
             {club.members.map(member => (
-              <div
-                key={member.id}
-                className="flex items-center justify-between bg-cream rounded-xl px-4 py-3 group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-burgundy/10 flex items-center justify-center text-sm font-semibold text-burgundy">
-                    {member.name.charAt(0).toUpperCase()}
+              <div key={member.id} className="bg-cream rounded-xl px-4 py-3 group">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-burgundy/10 flex items-center justify-center text-sm font-semibold text-burgundy">
+                      {member.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-charcoal">{member.name}</span>
+                      {member.pixKey && (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="bg-[#32BCAD] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">PIX</span>
+                          <span className="text-[11px] text-charcoal-light truncate max-w-[140px]">{member.pixKey}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-sm font-medium text-charcoal">{member.name}</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setEditingPixId(editingPixId === member.id ? null : member.id);
+                        setEditingPixValue(member.pixKey || '');
+                      }}
+                      className="text-[#32BCAD] text-xs font-bold w-9 h-9 flex items-center justify-center rounded-full hover:bg-[#32BCAD]/10 transition-colors"
+                      title="Editar chave Pix"
+                    >
+                      💳
+                    </button>
+                    <button
+                      onClick={() => removeMember(member.id)}
+                      className="text-red-400 hover:text-red-600 text-xs font-bold w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-50 transition-colors opacity-60 sm:opacity-0 sm:group-hover:opacity-100"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
-                <button
-                  onClick={() => removeMember(member.id)}
-                  className="text-red-400 hover:text-red-600 text-xs font-bold w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 transition-colors opacity-60 sm:opacity-0 sm:group-hover:opacity-100"
-                >
-                  ✕
-                </button>
+                {editingPixId === member.id && (
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="text"
+                      value={editingPixValue}
+                      onChange={e => setEditingPixValue(e.target.value)}
+                      placeholder="CPF, e-mail, telefone ou chave aleatória"
+                      className="flex-1 px-3 py-2 rounded-lg border border-cream-dark bg-white text-charcoal text-sm focus:ring-2 focus:ring-[#32BCAD]/30 focus:border-[#32BCAD] transition-shadow"
+                      style={{ fontSize: '14px', minHeight: '40px' }}
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => saveMemberPix(member.id)}
+                      className="bg-[#32BCAD] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity min-h-[40px]"
+                    >
+                      Salvar
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -14,6 +14,7 @@ export const ClubForm: React.FC = () => {
   const [description, setDescription] = useState('');
   const [members, setMembers] = useState<Member[]>([]);
   const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberPix, setNewMemberPix] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -36,8 +37,9 @@ export const ClubForm: React.FC = () => {
       toast.error('Member already exists');
       return;
     }
-    setMembers(prev => [...prev, { id: uuidv4(), name: trimmed }]);
+    setMembers(prev => [...prev, { id: uuidv4(), name: trimmed, pixKey: newMemberPix.trim() || undefined }]);
     setNewMemberName('');
+    setNewMemberPix('');
     toast.success(`${trimmed} added`);
   };
 
@@ -124,6 +126,14 @@ export const ClubForm: React.FC = () => {
               Add
             </button>
           </div>
+          <input
+            type="text"
+            value={newMemberPix}
+            onChange={e => setNewMemberPix(e.target.value)}
+            placeholder="Chave Pix (opcional) — CPF, e-mail, telefone ou chave aleatória"
+            className="w-full px-4 py-2.5 rounded-2xl border border-cream-dark bg-white text-charcoal placeholder-charcoal-light/40 focus:ring-2 focus:ring-burgundy/30 focus:border-burgundy transition-shadow mb-3"
+            style={{ fontSize: '14px', minHeight: '44px' }}
+          />
 
           {members.length === 0 ? (
             <div className="text-center py-6 bg-cream/50 rounded-2xl border border-dashed border-cream-dark">
@@ -142,6 +152,9 @@ export const ClubForm: React.FC = () => {
                       {member.name.charAt(0).toUpperCase()}
                     </div>
                     <span className="text-sm font-medium text-charcoal">{member.name}</span>
+                    {member.pixKey && (
+                      <span className="bg-[#32BCAD] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">PIX</span>
+                    )}
                   </div>
                   <button
                     type="button"

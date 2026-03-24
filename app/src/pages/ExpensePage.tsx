@@ -149,14 +149,34 @@ export const ExpensePage: React.FC = () => {
             💸 Transfers
           </h2>
           <div className="space-y-3">
-            {splits.map((split, i) => (
-              <div key={i} className="flex items-center gap-2 bg-cream rounded-xl p-4">
-                <span className="text-sm font-semibold text-burgundy">{getMemberName(split.fromMemberId)}</span>
-                <svg className="w-4 h-4 text-charcoal-light shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                <span className="text-sm font-semibold text-burgundy">{getMemberName(split.toMemberId)}</span>
-                <span className="ml-auto text-sm font-bold text-gold-dark">R${split.amount.toFixed(2)}</span>
-              </div>
-            ))}
+            {splits.map((split, i) => {
+              const toMember = members.find(m => m.id === split.toMemberId);
+              return (
+                <div key={i} className="bg-cream rounded-xl p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-burgundy">{getMemberName(split.fromMemberId)}</span>
+                    <svg className="w-4 h-4 text-charcoal-light shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                    <span className="text-sm font-semibold text-burgundy">{getMemberName(split.toMemberId)}</span>
+                    <span className="ml-auto text-sm font-bold text-gold-dark">R${split.amount.toFixed(2)}</span>
+                  </div>
+                  {toMember?.pixKey && (
+                    <div className="flex items-center gap-2 pt-1 border-t border-cream-dark">
+                      <span className="bg-[#32BCAD] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">PIX</span>
+                      <span className="text-xs text-charcoal-light flex-1 truncate">{toMember.pixKey}</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(toMember.pixKey!);
+                          toast.success('Chave Pix copiada! Abra seu banco e cole.');
+                        }}
+                        className="bg-[#32BCAD] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity shrink-0 min-h-[32px]"
+                      >
+                        Copiar Pix
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

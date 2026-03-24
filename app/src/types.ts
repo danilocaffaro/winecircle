@@ -2,6 +2,7 @@ export interface Member {
   id: string;
   name: string;
   email?: string;
+  pixKey?: string;
 }
 
 export interface Club {
