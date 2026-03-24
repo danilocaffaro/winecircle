@@ -11,6 +11,7 @@ export const ClubDetail: React.FC = () => {
   const events = id ? getEventsByClub(id) : [];
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberPix, setNewMemberPix] = useState('');
+  const [showAddMember, setShowAddMember] = useState(false);
   const [editingPixId, setEditingPixId] = useState<string | null>(null);
   const [editingPixValue, setEditingPixValue] = useState('');
 
