@@ -38,10 +38,6 @@ export const ProfilePage: React.FC = () => {
       {/* Stats / Empty state */}
       {totalWines === 0 && clubs.length === 0 && events.length === 0 ? (
         <div className="card-elevated p-8 text-center" style={{ borderRadius: 'var(--shape-extra-large)' }}>
-          <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
-            style={{ background: 'var(--md-primary-container)' }}>
-            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 40, color: 'var(--md-on-primary-container)' }}>local_bar</span>
-          </div>
           <h3 className="type-title-large mb-2" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
             Your journey awaits!
           </h3>
