@@ -34,6 +34,7 @@ export interface Wine {
   imageUrl?: string;
   type?: WineType;
   price?: number;
+  description?: string;
   rating?: number;       // 1.0-5.0
   ratingCount?: number;
   tasteProfile?: TasteProfile;

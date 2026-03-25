@@ -12,8 +12,6 @@ import { TastingPage } from './pages/TastingPage';
 import { ResultsPage } from './pages/ResultsPage';
 import { ExpensePage } from './pages/ExpensePage';
 import { SearchPage } from './pages/SearchPage';
-import { ScanPage } from './pages/ScanPage';
-import { MyWinesPage } from './pages/MyWinesPage';
 import { ProfilePage } from './pages/ProfilePage';
 
 const App: React.FC = () => {
@@ -46,8 +44,6 @@ const App: React.FC = () => {
           <Route path="/events/:id/results" element={<ResultsPage />} />
           <Route path="/events/:id/expenses" element={<ExpensePage />} />
           <Route path="/search" element={<SearchPage />} />
-          <Route path="/scan" element={<ScanPage />} />
-          <Route path="/wines" element={<MyWinesPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </Layout>

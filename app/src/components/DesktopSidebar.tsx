@@ -4,8 +4,6 @@ import { Link, useLocation } from 'react-router-dom';
 const sidebarItems = [
   { to: '/',        label: 'Home',     icon: 'home' },
   { to: '/search',  label: 'Discover', icon: 'search' },
-  { to: '/scan',    label: 'Scan Wine',icon: 'barcode_scanner' },
-  { to: '/wines',   label: 'My Wines', icon: 'wine_bar' },
   { to: '/clubs',   label: 'My Clubs', icon: 'group' },
   { to: '/profile', label: 'Profile',  icon: 'person' },
 ];

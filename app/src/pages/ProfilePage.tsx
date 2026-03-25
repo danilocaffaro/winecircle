@@ -17,7 +17,6 @@ export const ProfilePage: React.FC = () => {
 
   const links = [
     { to: '/clubs', label: 'My Clubs', icon: 'group', count: clubs.length },
-    { to: '/wines', label: 'Wine Collection', icon: 'wine_bar', count: totalWines },
     { to: '/search', label: 'Discover Wines', icon: 'search' },
   ];
 

@@ -20,7 +20,7 @@ export const SortableWineCard: React.FC<Props> = ({ wine, index, blind }) => {
     isDragging,
   } = useSortable({ id: wine.id });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
@@ -31,16 +31,16 @@ export const SortableWineCard: React.FC<Props> = ({ wine, index, blind }) => {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <div className="flex items-center gap-3">
-        <div className="flex flex-col items-center shrink-0 w-9">
-          <span className="text-lg font-bold text-burgundy" style={{ fontFamily: 'Playfair Display, serif' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, width: 36 }}>
+          <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--md3-primary)', fontFamily: 'Playfair Display, serif' }}>
             #{index + 1}
           </span>
-          <svg className="w-5 h-5 text-charcoal-light/40 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-          </svg>
+          <span className="material-symbols-rounded" style={{ fontSize: 18, color: 'var(--md3-on-surface-variant)', marginTop: 4 }}>
+            drag_handle
+          </span>
         </div>
-        <div className="flex-1">
+        <div style={{ flex: 1, minWidth: 0 }}>
           <WineCard wine={wine} blind={blind} blindLabel={blindLabel} />
         </div>
       </div>

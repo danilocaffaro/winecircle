@@ -10,50 +10,29 @@ interface Props {
   compact?: boolean;
 }
 
-const wineTypeColors: Record<WineType, { bg: string; text: string; gradient: string; label: string }> = {
-  red: { bg: 'bg-wine-red/10', text: 'text-wine-red', gradient: 'wine-gradient-red', label: 'Red' },
-  white: { bg: 'bg-wine-white/15', text: 'text-gold-dark', gradient: 'wine-gradient-white', label: 'White' },
-  rosé: { bg: 'bg-wine-rose/15', text: 'text-pink-600', gradient: 'wine-gradient-rose', label: 'Rosé' },
-  sparkling: { bg: 'bg-wine-sparkling/20', text: 'text-slate-600', gradient: 'wine-gradient-sparkling', label: 'Sparkling' },
-  dessert: { bg: 'bg-amber-100', text: 'text-amber-700', gradient: 'wine-gradient-default', label: 'Dessert' },
-  orange: { bg: 'bg-orange-100', text: 'text-orange-700', gradient: 'wine-gradient-default', label: 'Orange' },
+const wineTypeColors: Record<WineType, { bg: string; text: string; label: string }> = {
+  red:       { bg: 'rgba(255,178,184,0.15)', text: 'var(--md3-primary)',  label: 'Red' },
+  white:     { bg: 'rgba(231,192,142,0.15)', text: 'var(--md3-tertiary)', label: 'White' },
+  rosé:      { bg: 'rgba(255,178,184,0.12)', text: '#f4a0a8',            label: 'Rosé' },
+  sparkling: { bg: 'rgba(231,192,142,0.12)', text: 'var(--md3-tertiary)', label: 'Sparkling' },
+  dessert:   { bg: 'rgba(231,192,142,0.15)', text: '#d4a050',            label: 'Dessert' },
+  orange:    { bg: 'rgba(220,160,80,0.15)',  text: '#d4a050',            label: 'Orange' },
 };
 
 function getRatingColor(rating: number): string {
-  if (rating >= 4.0) return 'rating-excellent';
-  if (rating >= 3.0) return 'rating-good';
-  return 'rating-average';
+  if (rating >= 4.0) return '#4caf50';
+  if (rating >= 3.0) return 'var(--md3-tertiary)';
+  return 'var(--md3-error)';
 }
 
-function getRatingBorder(rating: number): string {
-  if (rating >= 4.0) return 'border-green-400';
-  if (rating >= 3.0) return 'border-yellow-400';
-  return 'border-red-400';
-}
-
-const BottlePlaceholder: React.FC<{ type?: WineType; size?: 'sm' | 'md' }> = ({ type = 'red', size = 'md' }) => {
-  const colors = wineTypeColors[type] || wineTypeColors.red;
-  const h = size === 'sm' ? 'h-20' : 'h-28';
-  const w = size === 'sm' ? 'w-10' : 'w-14';
-  return (
-    <div className={`${w} ${h} relative flex items-center justify-center`}>
-      <div className={`absolute inset-0 ${colors.gradient} rounded-lg opacity-90`} style={{
-        clipPath: 'polygon(38% 0%, 62% 0%, 62% 10%, 68% 14%, 68% 22%, 60% 27%, 60% 92%, 65% 100%, 35% 100%, 40% 92%, 40% 27%, 32% 22%, 32% 14%, 38% 10%)'
-      }} />
-      <div className="absolute bottom-[28%] left-1/2 -translate-x-1/2 w-[52%] h-[22%] bg-white/20 rounded-sm" />
+const TasteBar: React.FC<{ leftLabel: string; rightLabel: string; value: number }> = ({ leftLabel, rightLabel, value }) => (
+  <div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+      <span className="type-label-small" style={{ color: 'var(--md3-on-surface-variant)' }}>{leftLabel}</span>
+      <span className="type-label-small" style={{ color: 'var(--md3-on-surface-variant)' }}>{rightLabel}</span>
     </div>
-  );
-};
-
-/** Taste profile bar — h-2.5 (10px) for Vivino-standard ~6px+ thickness */
-const TasteBar: React.FC<{ label: string; leftLabel: string; rightLabel: string; value: number }> = ({ leftLabel, rightLabel, value }) => (
-  <div className="space-y-1">
-    <div className="flex justify-between items-center">
-      <span className="text-[11px] text-charcoal-light/80 font-medium">{leftLabel}</span>
-      <span className="text-[11px] text-charcoal-light/80 font-medium">{rightLabel}</span>
-    </div>
-    <div className="relative h-2.5 bg-cream-dark rounded-full overflow-hidden">
-      <div className="taste-bar-fill absolute left-0 top-0 h-full bg-burgundy/60 rounded-full" style={{ width: `${value}%` }} />
+    <div style={{ height: 6, borderRadius: 3, background: 'var(--md3-surface-container-high)', overflow: 'hidden' }}>
+      <div style={{ width: `${value}%`, height: '100%', borderRadius: 3, background: 'var(--md3-primary)', transition: 'width 0.5s ease' }} />
     </div>
   </div>
 );
@@ -62,126 +41,146 @@ export const WineCard: React.FC<Props> = ({ wine, blind, blindLabel, onClick, ch
   const typeInfo = wine.type ? wineTypeColors[wine.type] : null;
   const [imgError, setImgError] = useState(false);
 
+  const cardStyle: React.CSSProperties = {
+    background: 'var(--md3-surface-container)',
+    borderRadius: 16, overflow: 'hidden',
+    border: '1px solid var(--md3-outline-variant)',
+    transition: 'box-shadow 0.2s',
+    cursor: onClick ? 'pointer' : undefined,
+  };
+
   if (blind) {
     return (
-      <div
-        onClick={onClick}
-        className={`bg-white rounded-2xl shadow-md hover:shadow-lg border border-cream-dark overflow-hidden transition-all duration-200 ${onClick ? 'cursor-pointer active:scale-[0.99]' : ''}`}
-      >
-        <div className="p-5 flex items-center gap-4">
-          <div className="w-12 h-16 rounded-xl bg-gradient-to-br from-charcoal/10 to-charcoal/20 flex items-center justify-center">
-            <span className="text-2xl">🎭</span>
+      <div onClick={onClick} style={cardStyle}>
+        <div style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{
+            width: 48, height: 64, borderRadius: 12,
+            background: 'linear-gradient(135deg, var(--md3-surface-container-high), var(--md3-surface-container-highest))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span className="material-symbols-rounded" style={{ fontSize: 24, color: 'var(--md3-on-surface-variant)' }}>masks</span>
           </div>
           <div>
-            <h3 className="font-semibold text-burgundy text-lg" style={{ fontFamily: 'Playfair Display, serif' }}>
+            <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: 16, fontWeight: 600, color: 'var(--md3-on-surface)' }}>
               {blindLabel || 'Wine'}
             </h3>
-            <p className="text-xs text-charcoal-light mt-0.5">Identity hidden during tasting</p>
+            <p className="type-body-small" style={{ color: 'var(--md3-on-surface-variant)', marginTop: 2 }}>Identity hidden during tasting</p>
           </div>
         </div>
-        {children && <div className="px-5 pb-5 pt-0 border-t border-cream-dark mt-0">{children}</div>}
+        {children && <div style={{ padding: '0 18px 16px', borderTop: '1px solid var(--md3-outline-variant)' }}>{children}</div>}
       </div>
     );
   }
 
   return (
-    <div
-      onClick={onClick}
-      className={`bg-white rounded-2xl shadow-md hover:shadow-lg border border-cream-dark overflow-hidden transition-all duration-200 ${onClick ? 'cursor-pointer active:scale-[0.99]' : ''}`}
-    >
-      <div className="p-5">
-        <div className="flex gap-4">
-          {/* Bottle image / placeholder */}
-          <div className="shrink-0 flex flex-col items-center">
+    <div onClick={onClick} style={cardStyle}>
+      <div style={{ padding: compact ? '12px 14px' : '16px 18px' }}>
+        <div style={{ display: 'flex', gap: 14 }}>
+          {/* Bottle image */}
+          <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {wine.imageUrl && !imgError ? (
-              <img
-                src={wine.imageUrl}
-                alt={wine.name}
-                className="w-14 h-28 object-contain rounded-lg"
-                onError={() => setImgError(true)}
-              />
+              <img src={wine.imageUrl} alt={wine.name}
+                style={{ width: compact ? 40 : 56, height: compact ? 80 : 112, objectFit: 'contain', borderRadius: 8 }}
+                onError={() => setImgError(true)} />
             ) : (
-              <BottlePlaceholder type={wine.type} size={compact ? 'sm' : 'md'} />
+              <div style={{
+                width: compact ? 40 : 56, height: compact ? 80 : 112,
+                borderRadius: 8,
+                background: `linear-gradient(135deg, var(--md3-primary-container), var(--md3-surface-container-highest))`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <span className="material-symbols-rounded ms-filled" style={{ fontSize: compact ? 20 : 28, color: 'var(--md3-primary)' }}>wine_bar</span>
+              </div>
             )}
           </div>
 
-          {/* Wine info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-burgundy text-base leading-tight line-clamp-2" style={{ fontFamily: 'Playfair Display, serif' }}>
-                  {wine.name}
-                </h3>
+          {/* Info */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: 8 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <h3 style={{
+                  fontFamily: 'Playfair Display, serif', fontSize: 15, fontWeight: 600,
+                  color: 'var(--md3-on-surface)', lineHeight: 1.3,
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden',
+                }}>{wine.name}</h3>
                 {wine.producer && (
-                  <p className="text-xs text-charcoal-light mt-1 truncate">{wine.producer}</p>
+                  <p className="type-body-small" style={{ color: 'var(--md3-on-surface-variant)', marginTop: 2 }}>{wine.producer}</p>
                 )}
               </div>
-
-              {/* Rating badge */}
               {wine.rating && (
-                <div className={`shrink-0 w-12 h-12 rounded-full border-2 ${getRatingBorder(wine.rating)} flex flex-col items-center justify-center ${getRatingColor(wine.rating)}`}>
-                  <span className="text-sm font-bold leading-none">{wine.rating.toFixed(1)}</span>
-                  {wine.ratingCount && (
-                    <span className="text-[7px] leading-none mt-0.5 opacity-70">{wine.ratingCount >= 1000 ? `${(wine.ratingCount/1000).toFixed(0)}k` : wine.ratingCount}</span>
-                  )}
+                <div style={{
+                  flexShrink: 0, width: 40, height: 40, borderRadius: '50%',
+                  border: `2px solid ${getRatingColor(wine.rating)}`,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: getRatingColor(wine.rating), lineHeight: 1 }}>{wine.rating.toFixed(1)}</span>
                 </div>
               )}
             </div>
 
-            {/* Tags row */}
-            <div className="flex flex-wrap gap-1.5 mt-2.5">
+            {/* Tags */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
               {typeInfo && (
-                <span className={`text-[11px] font-semibold ${typeInfo.bg} ${typeInfo.text} px-2.5 py-1 rounded-full`}>
-                  {typeInfo.label}
-                </span>
+                <span style={{
+                  fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 10,
+                  background: typeInfo.bg, color: typeInfo.text,
+                }}>{typeInfo.label}</span>
               )}
               {wine.year && (
-                <span className="text-[11px] font-medium bg-gold/12 text-gold-dark px-2.5 py-1 rounded-full">
-                  {wine.year}
-                </span>
+                <span style={{
+                  fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 10,
+                  background: 'rgba(231,192,142,0.12)', color: 'var(--md3-tertiary)',
+                }}>{wine.year}</span>
               )}
               {wine.grape && (
-                <span className="text-[11px] font-medium bg-burgundy/8 text-burgundy px-2.5 py-1 rounded-full">
-                  {wine.grape}
-                </span>
+                <span style={{
+                  fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 10,
+                  background: 'rgba(255,178,184,0.08)', color: 'var(--md3-primary)',
+                }}>{wine.grape}</span>
               )}
               {wine.region && (
-                <span className="text-[11px] font-medium bg-cream-dark text-charcoal-light px-2.5 py-1 rounded-full">
-                  <span className="material-symbols-rounded" style={{ fontSize: 14 }}>location_on</span> {wine.region}{wine.country ? `, ${wine.country}` : ''}
+                <span style={{
+                  fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 10,
+                  background: 'var(--md3-surface-container-high)', color: 'var(--md3-on-surface-variant)',
+                  display: 'inline-flex', alignItems: 'center', gap: 3,
+                }}>
+                  <span className="material-symbols-rounded" style={{ fontSize: 12 }}>location_on</span>
+                  {wine.region}{wine.country ? `, ${wine.country}` : ''}
                 </span>
               )}
             </div>
 
-            {/* Price */}
             {wine.price && (
-              <p className="text-sm font-bold text-burgundy mt-2.5">
+              <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--md3-primary)', marginTop: 8 }}>
                 R$ {wine.price.toFixed(2)}
               </p>
             )}
 
-            {/* Taste profile — thicker bars (h-2.5) */}
             {wine.tasteProfile && !compact && (
-              <div className="mt-4 space-y-2.5">
-                <TasteBar label="Body" leftLabel="Light" rightLabel="Bold" value={wine.tasteProfile.body} />
-                <TasteBar label="Sweetness" leftLabel="Dry" rightLabel="Sweet" value={wine.tasteProfile.sweetness} />
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <TasteBar leftLabel="Light" rightLabel="Bold" value={wine.tasteProfile.body} />
+                <TasteBar leftLabel="Dry" rightLabel="Sweet" value={wine.tasteProfile.sweetness} />
                 {wine.type === 'red' && (
-                  <TasteBar label="Tannin" leftLabel="Smooth" rightLabel="Tannic" value={wine.tasteProfile.tannin} />
+                  <TasteBar leftLabel="Smooth" rightLabel="Tannic" value={wine.tasteProfile.tannin} />
                 )}
               </div>
             )}
 
-            {/* Tasting notes */}
             {wine.tastingNotes && !compact && (
-              <p className="text-[11px] text-charcoal-light mt-3 line-clamp-2 leading-relaxed italic">
-                "{wine.tastingNotes}"
-              </p>
+              <p style={{
+                fontSize: 11, fontStyle: 'italic', marginTop: 10, lineHeight: 1.5,
+                color: 'var(--md3-on-surface-variant)',
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden',
+              }}>"{wine.tastingNotes}"</p>
             )}
           </div>
         </div>
       </div>
-      {children && <div className="px-5 pb-5 pt-3 border-t border-cream-dark">{children}</div>}
+      {children && (
+        <div style={{ padding: '10px 18px 14px', borderTop: '1px solid var(--md3-outline-variant)' }}>{children}</div>
+      )}
     </div>
   );
 };
 
-export { BottlePlaceholder, wineTypeColors, getRatingColor };
+export { wineTypeColors, getRatingColor };

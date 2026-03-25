@@ -11,8 +11,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: '/',       label: 'Home',     icon: 'home',       iconFilled: 'home' },
   { to: '/search', label: 'Discover', icon: 'search',     iconFilled: 'search' },
-  { to: '/scan',   label: 'Scan',     icon: 'barcode_scanner', iconFilled: 'barcode_scanner' },
-  { to: '/wines',  label: 'My Wines', icon: 'wine_bar',   iconFilled: 'wine_bar' },
+  { to: '/clubs',  label: 'Clubs',    icon: 'group',      iconFilled: 'group' },
   { to: '/profile',label: 'Profile',  icon: 'person',     iconFilled: 'person' },
 ];
 
