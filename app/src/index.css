@@ -155,7 +155,9 @@
 /* ═══════════════════════════════════════════════════════
    BASE RESET & TYPOGRAPHY
    ═══════════════════════════════════════════════════════ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+}
 
 html { font-size: 16px; -webkit-text-size-adjust: 100%; overflow-x: hidden; }
 body {
@@ -732,9 +734,13 @@ body {
 /* ═══════════════════════════════════════════════════════
    SAFE AREA UTILITIES
    ═══════════════════════════════════════════════════════ */
-.safe-area-top    { padding-top:    env(safe-area-inset-top);    }
-.safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
-.safe-area-x {
-  padding-left:  env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+@layer base {
+  .safe-area-top    { padding-top:    env(safe-area-inset-top);    }
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+}
+@layer base {
+  .safe-area-x {
+    padding-left:  env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 }
