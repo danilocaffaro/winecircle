@@ -36,7 +36,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       <div className="flex flex-1">
         <DesktopSidebar />
 
-        <div className="flex-1 flex flex-col min-h-screen" style={{ overflowX: 'hidden' }}>
+        <div className="flex-1 flex flex-col min-h-screen" style={{ overflowX: 'clip' }}>
           {/* Desktop Header */}
           <header className="hidden md:block w-full bg-white border-b border-cream-dark sticky top-0 z-50">
             <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
@@ -56,7 +56,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           {/* Main Content — pt-14 compensa header fixed 48px no mobile */}
           <main
             className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 py-5 pb-28 md:pb-8 safe-area-x"
-            style={{ paddingTop: 'calc(48px + 12px)', overflowX: 'hidden' }}
+            style={{ paddingTop: 'calc(48px + 12px)', overflowX: 'clip' }}
           >
             {children}
           </main>

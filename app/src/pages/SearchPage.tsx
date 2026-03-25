@@ -276,7 +276,7 @@ export const SearchPage: React.FC = () => {
       </div>
 
       {/* ── Filter chips MD3 ── */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', paddingRight: 16 }}>
         {filterChips.map(chip => {
           const active = activeFilter === chip.value;
           return (
