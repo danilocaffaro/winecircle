@@ -35,6 +35,7 @@ export const SearchPage: React.FC = () => {
   // Autocomplete state
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const [recentSearches, setRecentSearches] = useState<string[]>(getRecent);
@@ -47,12 +48,18 @@ export const SearchPage: React.FC = () => {
   const fetchSuggestions = useCallback(async (q: string) => {
     if (q.trim().length < 2) { setSuggestions([]); return; }
     setLoadingSuggestions(true);
-    setShowDropdown(true); // garantir que dropdown abre enquanto carrega
+    setSuggestionsError(false);
+    setShowDropdown(true);
     try {
       const res = await getWineSuggestions(q.trim());
       setSuggestions(res.slice(0, 5));
-      setShowDropdown(true); // manter aberto quando resultado chega
-    } catch { setSuggestions([]); }
+      setShowDropdown(true);
+    } catch (err) {
+      console.error('Suggestions failed:', err);
+      setSuggestions([]);
+      setSuggestionsError(true);
+      setShowDropdown(true);
+    }
     finally { setLoadingSuggestions(false); }
   }, []);
 
@@ -175,7 +182,7 @@ export const SearchPage: React.FC = () => {
         </div>
 
         {/* ── Autocomplete dropdown ── */}
-        {showDropdown && (dropdownItems.length > 0 || showRecent || (loadingSuggestions && query.trim().length >= 2)) && (
+        {showDropdown && (dropdownItems.length > 0 || showRecent || (loadingSuggestions && query.trim().length >= 2) || (suggestionsError && query.trim().length >= 2)) && (
           <div ref={dropdownRef} className="search-dropdown">
 
             {/* Loading state */}
@@ -183,6 +190,13 @@ export const SearchPage: React.FC = () => {
               <div className="flex items-center gap-3 px-4 py-3">
                 <div className="w-4 h-4 border-2 border-burgundy/20 border-t-burgundy rounded-full animate-spin flex-shrink-0" />
                 <span className="text-sm text-charcoal-muted">Finding suggestions...</span>
+              </div>
+            )}
+
+            {/* Error state */}
+            {suggestionsError && !loadingSuggestions && dropdownItems.length === 0 && query.trim().length >= 2 && (
+              <div className="px-4 py-3 text-sm text-charcoal-muted">
+                <span>AI suggestions unavailable — press Enter to search</span>
               </div>
             )}
 

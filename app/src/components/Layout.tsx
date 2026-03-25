@@ -53,9 +53,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </div>
           </header>
 
-          {/* Main Content — pt-12 para compensar header fixed no mobile */}
+          {/* Main Content — pt-14 compensa header fixed 48px no mobile */}
           <main
-            className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 py-5 pb-28 md:pb-8 safe-area-x pt-16 md:pt-5"
+            className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 py-5 pb-28 md:pb-8 safe-area-x"
+            style={{ paddingTop: 'calc(48px + 12px)' }}
           >
             {children}
           </main>
