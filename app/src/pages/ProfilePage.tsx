@@ -32,7 +32,7 @@ export const ProfilePage: React.FC = () => {
         <h1 className="type-title-large" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
           Wine Enthusiast
         </h1>
-        <p className="type-body-small mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>Member since 2026</p>
+        <p className="type-body-small mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>Member since {new Date().getFullYear()}</p>
       </div>
 
       {/* Stats / Empty state */}

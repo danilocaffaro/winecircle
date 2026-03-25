@@ -275,7 +275,7 @@ export const SearchPage: React.FC = () => {
       </div>
 
       {/* ── Filter chips MD3 ── */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {filterChips.map(chip => {
           const active = activeFilter === chip.value;
           return (
@@ -342,25 +342,27 @@ export const SearchPage: React.FC = () => {
       {/* ── Empty state ── */}
       {!searching && results.length === 0 && (
         <div className="text-center py-8 fade-in">
-          <div className="w-24 h-24 mx-auto mb-5 rounded-full wine-gradient-red flex items-center justify-center shadow-lg">
-            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 48, color: 'var(--md-outline)' }}>wine_bar</span>
+          <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
+            style={{ background: 'var(--md-primary-container)' }}>
+            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 40, color: 'var(--md-on-primary-container)' }}>wine_bar</span>
           </div>
-          <h3 className="font-bold text-burgundy text-xl mb-1.5" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <h3 className="type-title-large mb-1.5" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
             Discover Wines
           </h3>
-          <p className="text-charcoal-muted text-sm mb-7 max-w-xs mx-auto leading-relaxed">
-            Search any wine by name, region, or grape variety and get AI-powered tasting notes and details
+          <p className="type-body-medium mb-7 max-w-xs mx-auto" style={{ color: 'var(--md-on-surface-variant)' }}>
+            Search any wine by name, region, or grape variety
           </p>
 
           {/* Popular searches */}
           <div className="space-y-3">
-            <p className="section-label">Popular searches</p>
-            <div className="flex flex-wrap justify-center gap-2">
+            <p className="type-label-large" style={{ color: 'var(--md-on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Popular searches</p>
+            <div className="flex flex-wrap justify-center gap-2 px-2">
               {POPULAR.map(s => (
                 <button
                   key={s}
                   onClick={() => { setQuery(s); handleSearch(s); }}
-                  className="text-xs font-semibold bg-white border border-cream-dark text-charcoal-light px-4 py-2.5 rounded-full hover:bg-burgundy hover:text-cream hover:border-burgundy transition-all duration-200 min-h-[40px]"
+                  className="chip whitespace-nowrap"
+                  style={{ minHeight: 40 }}
                 >
                   {s}
                 </button>

@@ -18,9 +18,13 @@ export const ResultsPage: React.FC = () => {
 
   if (!event || !club) {
     return (
-      <div className="text-center py-16">
+      <div className="text-center py-16 space-y-4">
         <span className="material-symbols-rounded" style={{ fontSize: 40, color: 'var(--md-outline)' }}>error_outline</span>
-        <p className="type-body-medium mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>Event not found</p>
+        <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>Event not found</p>
+        <Link to="/clubs" className="btn-outlined inline-flex items-center gap-1" style={{ borderRadius: 'var(--shape-full)' }}>
+          <span className="material-symbols-rounded" style={{ fontSize: 18 }}>arrow_back</span>
+          Back to Clubs
+        </Link>
       </div>
     );
   }
