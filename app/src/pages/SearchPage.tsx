@@ -137,7 +137,7 @@ export const SearchPage: React.FC = () => {
   const showRecent = query.trim().length === 0 && recentSearches.length > 0;
 
   return (
-    <div className="space-y-5 max-w-4xl mx-auto pb-6">
+    <div className="space-y-5 max-w-4xl mx-auto pb-6" style={{ overflowX: 'hidden' }}>
 
       {/* ── Search bar with autocomplete ── */}
       <div className="relative">
@@ -162,6 +162,7 @@ export const SearchPage: React.FC = () => {
             spellCheck={false}
             style={{
               width: '100%',
+              boxSizing: 'border-box',
               paddingLeft: 52,
               paddingRight: query ? 52 : 16,
               height: 56,
