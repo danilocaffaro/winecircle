@@ -22,7 +22,12 @@ export const Home: React.FC = () => {
           className="type-label-large"
           style={{ color: 'var(--md-on-surface-variant)' }}
         >
-          Welcome back
+          {(() => {
+            const h = new Date().getHours();
+            if (h < 12) return 'Good morning ☀️';
+            if (h < 18) return 'Good afternoon 🍷';
+            return 'Good evening 🌙';
+          })()}
         </p>
         <h1
           className="type-headline-large"
@@ -92,7 +97,7 @@ export const Home: React.FC = () => {
           <div className="grid grid-cols-3 gap-3 fade-in fade-in-delay-1">
             {[
               { icon: 'group',         title: 'Clubs',         desc: 'Organize your community' },
-              { icon: 'visibility_off',title: 'Blind Tasting', desc: 'Fair & unbiased' },
+              { icon: 'mask',           title: 'Blind Tasting', desc: 'Fair & unbiased' },
               { icon: 'receipt_long',  title: 'Split Bills',   desc: 'Auto-calculated' },
             ].map(feat => (
               <div
@@ -150,6 +155,31 @@ export const Home: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {/* Why blind tasting */}
+          <div className="fade-in fade-in-delay-3">
+            <div
+              className="card-elevated p-5"
+              style={{ borderRadius: 'var(--shape-extra-large)', background: 'var(--md-surface-container)' }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-primary)' }}>info</span>
+                <p className="type-title-small" style={{ color: 'var(--md-on-surface)' }}>Why blind tasting?</p>
+              </div>
+              <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)', lineHeight: 1.6 }}>
+                When you can't see the label, you judge the wine — not the price tag. Groups that taste blind consistently discover that their favorite isn't always the most expensive one.
+              </p>
+              <Link
+                to="/search"
+                className="btn-text inline-flex items-center gap-1 mt-3 -ml-2"
+                style={{ color: 'var(--md-primary)' }}
+              >
+                Discover wines
+                <span className="material-symbols-rounded" style={{ fontSize: 18 }}>arrow_forward</span>
+              </Link>
+            </div>
+          </div>
+
         </div>
 
       ) : (
