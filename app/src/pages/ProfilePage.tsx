@@ -75,7 +75,7 @@ export const ProfilePage: React.FC = () => {
               padding: '12px 24px',
               borderRadius: 'var(--shape-full)',
               background: 'var(--dp-gold)',
-              color: '#0D0A0B',
+              color: 'var(--md-on-primary)',
               fontSize: 15, fontWeight: 600,
               textDecoration: 'none',
               fontFamily: 'inherit',
@@ -173,7 +173,7 @@ export const ProfilePage: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          <span style={{ color: '#0D0A0B', fontSize: 14, fontWeight: 800 }}>W</span>
+          <span style={{ color: 'var(--md-on-primary)', fontSize: 14, fontWeight: 800 }}>W</span>
         </div>
         <p style={{ fontSize: 11, color: 'var(--dp-cream-faint)', marginBottom: 2 }}>
           Wine Circle v1.0

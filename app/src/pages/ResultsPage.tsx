@@ -105,7 +105,7 @@ export const ResultsPage: React.FC = () => {
         <div
           className={`relative overflow-hidden text-white transition-all duration-700 ${revealed ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
           style={{
-            background: 'linear-gradient(135deg, #3D0C11 0%, #7B2D3A 40%, #9B3D4C 70%, #5A1F29 100%)',
+            background: 'linear-gradient(135deg, var(--md-primary) 0%, var(--md-secondary) 40%, var(--md-primary-container) 70%, var(--md-primary) 100%)',
             borderRadius: 'var(--shape-extra-large)',
           }}
         >

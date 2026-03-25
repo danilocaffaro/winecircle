@@ -14,7 +14,7 @@ export const Home: React.FC = () => {
         style={{
           margin: '0 -16px',
           padding: '48px 24px 40px',
-          background: 'linear-gradient(160deg, #1E1418 0%, #0D0A0B 60%)',
+          background: 'linear-gradient(160deg, var(--md-primary-container) 0%, var(--md-surface-container-low) 60%)',
           borderBottom: '1px solid rgba(201,162,96,0.12)',
           position: 'relative',
           overflow: 'hidden',
@@ -67,7 +67,7 @@ export const Home: React.FC = () => {
             className="btn-primary"
             style={{
               background: 'var(--dp-gold)',
-              color: '#0D0A0B',
+              color: 'var(--md-on-primary)',
               fontWeight: 600,
               fontSize: 14,
               paddingLeft: 20,
