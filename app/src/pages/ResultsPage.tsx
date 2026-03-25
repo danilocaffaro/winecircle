@@ -87,8 +87,10 @@ export const ResultsPage: React.FC = () => {
             Ready for the Reveal?
           </h2>
           <p className="type-body-medium mb-6" style={{ color: 'var(--md-on-surface-variant)' }}>
-            {event.type === 'blind'
-              ? `The wines have been judged blind. Let's see which one conquered ${event.rankings.length} taster${event.rankings.length !== 1 ? 's' : ''}.`
+            {event.rankings.length === 0
+              ? 'Complete the blind tasting first, then return here to reveal the winner.'
+              : event.type === 'blind'
+              ? `The wines have been judged blind by ${event.rankings.length} taster${event.rankings.length !== 1 ? 's' : ''}. Let's reveal the winner!`
               : `${event.rankings.length} taster${event.rankings.length !== 1 ? 's' : ''} have cast their votes. The winner is...`}
           </p>
           <button className="btn-primary px-10">

@@ -110,16 +110,18 @@ export const TastingPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-5 max-w-2xl mx-auto pb-6">
+    <div style={{ maxWidth: 672, margin: '0 auto', paddingBottom: 24 }}>
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-primary)' }}>wine_bar</span>
-        <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>Tasting</h1>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-primary)' }}>wine_bar</span>
+          <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>Tasting</h1>
+        </div>
+        <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{event.name}</p>
       </div>
-      <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)', marginTop: -16 }}>{event.name}</p>
 
       {/* Progress */}
-      <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)' }}>
+      <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)', marginBottom: 20 }}>
         <div className="flex justify-between type-body-medium mb-2">
           <span style={{ color: 'var(--md-on-surface-variant)' }}>Progress</span>
           <span style={{ color: 'var(--md-primary)', fontWeight: 700 }}>{rankings.length}/{members.length} ranked</span>

@@ -51,20 +51,22 @@ export const ExpensePage: React.FC = () => {
   const sharePerPerson = members.length > 0 ? totalCost / members.length : 0;
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <Link to={`/events/${event.id}`} className="btn-text inline-flex items-center" style={{ paddingLeft: 0 }}>
+    <div className="max-w-2xl mx-auto">
+      <Link to={`/events/${event.id}`} className="btn-text inline-flex items-center" style={{ paddingLeft: 0, marginBottom: 16 }}>
         <span className="material-symbols-rounded" style={{ fontSize: 20 }}>arrow_back</span>
         Back to event
       </Link>
 
-      <div className="flex items-center gap-2">
-        <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-primary)' }}>payments</span>
-        <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>Expenses</h1>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-primary)' }}>payments</span>
+          <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>Expenses</h1>
+        </div>
+        <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{event.name}</p>
       </div>
-      <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)', marginTop: -16 }}>{event.name}</p>
 
       {/* Total Cost */}
-      <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)' }}>
+      <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)', marginBottom: 20 }}>
         <label className="type-label-large block mb-2" style={{ color: 'var(--md-on-surface)' }}>Total Cost (R$)</label>
         <input type="number" value={totalCost || ''} onChange={e => { setTotalCost(Number(e.target.value)); setCalculated(false); }}
           placeholder="0.00" step="0.01" min="0" className="input-outlined w-full text-center"
