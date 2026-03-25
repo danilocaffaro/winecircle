@@ -17,9 +17,9 @@ export const Home: React.FC = () => {
     <div className="space-y-6 max-w-4xl mx-auto pb-4">
 
       {/* ── Greeting ── */}
-      <div className="pt-2 fade-in">
+      <div className="pt-1 fade-in">
         <p
-          className="type-label-large"
+          className="type-title-medium"
           style={{ color: 'var(--md-on-surface-variant)' }}
         >
           {(() => {
@@ -29,12 +29,6 @@ export const Home: React.FC = () => {
             return 'Good evening 🌙';
           })()}
         </p>
-        <h1
-          className="type-headline-large"
-          style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-primary)' }}
-        >
-          Wine Circle
-        </h1>
       </div>
 
       {isEmpty ? (
@@ -94,7 +88,7 @@ export const Home: React.FC = () => {
           </div>
 
           {/* Feature cards */}
-          <div className="grid grid-cols-3 gap-3 fade-in fade-in-delay-1">
+          <div className="grid grid-cols-3 gap-3 fade-in fade-in-delay-1" style={{ alignItems: 'stretch' }}>
             {[
               { icon: 'group',         title: 'Clubs',         desc: 'Organize your community' },
               { icon: 'masks',          title: 'Blind Tasting', desc: 'Fair & unbiased' },
@@ -103,7 +97,7 @@ export const Home: React.FC = () => {
               <div
                 key={feat.title}
                 className="card-elevated p-4 text-center"
-                style={{ borderRadius: 'var(--shape-large)', height: 130, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' }}
+                style={{ borderRadius: 'var(--shape-large)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' }}
               >
                 <div
                   className="w-10 h-10 mx-auto mb-3 rounded-2xl flex items-center justify-center shrink-0"
