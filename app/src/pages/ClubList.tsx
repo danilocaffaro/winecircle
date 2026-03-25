@@ -6,110 +6,177 @@ export const ClubList: React.FC = () => {
   const clubs = getClubs();
 
   return (
-    <div className="space-y-5 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center">
-        <h1
-          className="type-headline-medium"
-          style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}
+    <div style={{ maxWidth: 600, margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <h1 style={{
+          fontFamily: 'Playfair Display, serif',
+          fontSize: 28, fontWeight: 700,
+          color: 'var(--dp-cream)',
+        }}>My Clubs</h1>
+
+        <Link
+          to="/clubs/new"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '8px 18px', height: 40,
+            borderRadius: 'var(--shape-full)',
+            background: 'var(--dp-gold)',
+            color: '#0D0A0B',
+            fontSize: 13, fontWeight: 600,
+            textDecoration: 'none',
+            fontFamily: 'inherit',
+          }}
         >
-          My Clubs
-        </h1>
-        <Link to="/clubs/new" className="fab fab-extended" style={{ height: 40 }}>
-          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>add</span>
+          <span className="material-symbols-rounded" style={{ fontSize: 18 }}>add</span>
           New Club
         </Link>
       </div>
 
       {clubs.length === 0 ? (
-        <div
-          className="card-elevated flex flex-col items-center justify-center py-16 text-center"
-          style={{ borderRadius: 'var(--shape-extra-large)' }}
-        >
-          <div
-            className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
-            style={{ background: 'var(--md-primary-container)' }}
-          >
-            <span
-              className="material-symbols-rounded ms-filled"
-              style={{ fontSize: 40, color: 'var(--md-on-primary-container)' }}
-            >
-              group
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          padding: '48px 24px',
+          textAlign: 'center',
+        }}>
+          {/* Wine glass illustration — subtle, not an empty state cliché */}
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: 'var(--dp-surface-2)',
+            border: '1px solid var(--dp-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: 24,
+          }}>
+            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 36, color: 'var(--dp-gold)', opacity: 0.8 }}>
+              diversity_3
             </span>
           </div>
-          <h3
-            className="type-title-large mb-1"
-            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}
-          >
-            No Clubs Yet
+
+          <h3 style={{
+            fontFamily: 'Playfair Display, serif',
+            fontSize: 22, fontWeight: 600,
+            color: 'var(--dp-cream)',
+            marginBottom: 8,
+          }}>
+            Start your first club
           </h3>
-          <p className="type-body-medium mb-5 max-w-xs" style={{ color: 'var(--md-on-surface-variant)' }}>
-            Create your first wine tasting club and invite friends to join
+
+          <p style={{
+            fontSize: 15, lineHeight: 1.6,
+            color: 'var(--dp-cream-muted)',
+            maxWidth: 280, marginBottom: 8,
+          }}>
+            A wine club is a group of friends who taste blind together. No pretension — just honest opinions.
           </p>
-          <Link to="/clubs/new" className="btn-primary">
-            <span className="material-symbols-rounded ms-20">add</span>
+
+          <p style={{
+            fontSize: 13, fontStyle: 'italic',
+            color: 'var(--dp-cream-faint)',
+            marginBottom: 28,
+            maxWidth: 260,
+          }}>
+            "The best wine is the one you enjoy — the label is just marketing."
+          </p>
+
+          <Link
+            to="/clubs/new"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '12px 28px',
+              borderRadius: 'var(--shape-full)',
+              background: 'var(--dp-gold)',
+              color: '#0D0A0B',
+              fontSize: 15, fontWeight: 600,
+              textDecoration: 'none',
+              fontFamily: 'inherit',
+            }}
+          >
+            <span className="material-symbols-rounded" style={{ fontSize: 20 }}>add</span>
             Create Club
           </Link>
+
+          {/* Subtle hint about what comes next */}
+          <div style={{
+            marginTop: 40, padding: '16px 20px',
+            borderRadius: 12,
+            border: '1px solid var(--dp-border)',
+            background: 'var(--dp-surface-1)',
+            maxWidth: 320,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <span className="material-symbols-rounded" style={{ fontSize: 20, color: 'var(--dp-gold)', flexShrink: 0, marginTop: 2 }}>
+                lightbulb
+              </span>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--dp-cream)', marginBottom: 4 }}>
+                  How it works
+                </p>
+                <p style={{ fontSize: 12, color: 'var(--dp-cream-faint)', lineHeight: 1.5 }}>
+                  Create a club → Add friends → Schedule a blind tasting → Everyone scores each wine → Reveal the winner
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {clubs.map(club => {
             const eventCount = getEventsByClub(club.id).length;
             return (
               <Link
                 key={club.id}
                 to={`/clubs/${club.id}`}
-                className="card-outlined block"
-                style={{ borderRadius: 'var(--shape-large)', textDecoration: 'none' }}
+                style={{
+                  textDecoration: 'none',
+                  display: 'flex', alignItems: 'center', gap: 16,
+                  padding: '16px 20px',
+                  borderRadius: 16,
+                  background: 'var(--dp-surface-1)',
+                  border: '1px solid var(--dp-border)',
+                  transition: 'background 0.2s',
+                }}
               >
-                <div className="p-5 flex items-center gap-4">
-                  <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                    style={{ background: 'var(--md-primary-container)' }}
-                  >
-                    <span
-                      className="material-symbols-rounded ms-filled"
-                      style={{ fontSize: 24, color: 'var(--md-on-primary-container)' }}
-                    >
-                      group
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3
-                      className="type-title-medium"
-                      style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}
-                    >
-                      {club.name}
-                    </h3>
-                    {club.description && (
-                      <p
-                        className="type-body-small mt-0.5"
-                        style={{ color: 'var(--md-on-surface-variant)' }}
-                      >
-                        {club.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 mt-1.5">
-                      <span className="inline-flex items-center gap-1">
-                        <span className="material-symbols-rounded" style={{ fontSize: 14, color: 'var(--md-on-surface-variant)' }}>group</span>
-                        <span className="type-label-small" style={{ color: 'var(--md-on-surface-variant)' }}>
-                          {club.members.length} member{club.members.length !== 1 ? 's' : ''}
-                        </span>
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <span className="material-symbols-rounded" style={{ fontSize: 14, color: 'var(--md-on-surface-variant)' }}>event</span>
-                        <span className="type-label-small" style={{ color: 'var(--md-on-surface-variant)' }}>
-                          {eventCount} event{eventCount !== 1 ? 's' : ''}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                  <span
-                    className="material-symbols-rounded"
-                    style={{ fontSize: 20, color: 'var(--md-outline)', flexShrink: 0 }}
-                  >
-                    chevron_right
+                <div style={{
+                  width: 48, height: 48, borderRadius: 14,
+                  background: 'var(--dp-gold-faint)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--dp-gold)' }}>
+                    group
                   </span>
                 </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{
+                    fontFamily: 'Playfair Display, serif',
+                    fontSize: 16, fontWeight: 600,
+                    color: 'var(--dp-cream)',
+                    marginBottom: 2,
+                  }}>{club.name}</h3>
+                  {club.description && (
+                    <p style={{ fontSize: 13, color: 'var(--dp-cream-faint)', marginBottom: 4 }}>
+                      {club.description}
+                    </p>
+                  )}
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span className="material-symbols-rounded" style={{ fontSize: 14, color: 'var(--dp-cream-faint)' }}>person</span>
+                      <span style={{ fontSize: 12, color: 'var(--dp-cream-faint)' }}>
+                        {club.members.length}
+                      </span>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span className="material-symbols-rounded" style={{ fontSize: 14, color: 'var(--dp-cream-faint)' }}>event</span>
+                      <span style={{ fontSize: 12, color: 'var(--dp-cream-faint)' }}>
+                        {eventCount}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                <span className="material-symbols-rounded" style={{ fontSize: 20, color: 'var(--dp-cream-faint)', flexShrink: 0 }}>
+                  chevron_right
+                </span>
               </Link>
             );
           })}

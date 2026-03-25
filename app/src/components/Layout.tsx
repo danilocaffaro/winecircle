@@ -5,18 +5,17 @@ import { DesktopSidebar } from './DesktopSidebar';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-cream flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--dp-black)" }}>
       {/* Mobile Header — fixed no topo, não sticky dentro de flex */}
       <header
-        className="w-full bg-white border-b border-cream-dark md:hidden safe-area-top"
-        style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}
+        className="w-full md:hidden safe-area-top" style={{ background: "rgba(13,10,11,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--dp-border)", position: "fixed", top: 0, left: 0, right: 0, zIndex: 200 }}
       >
         <div className="max-w-xl mx-auto px-4 h-12 flex items-center justify-between safe-area-x">
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-7 h-7 rounded-lg wine-gradient-red flex items-center justify-center">
               <span className="text-white text-xs font-bold">W</span>
             </div>
-            <h1 className="text-lg font-bold text-burgundy tracking-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
+            <h1 className="text-lg font-bold tracking-tight" style={{ fontFamily: "Playfair Display, serif", color: "var(--dp-cream)" }}>
               Wine Circle
             </h1>
           </Link>
@@ -38,7 +37,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
         <div className="flex-1 flex flex-col min-h-screen min-w-0">
           {/* Desktop Header */}
-          <header className="hidden md:block w-full bg-white border-b border-cream-dark sticky top-0 z-50">
+          <header className="hidden md:block w-full sticky top-0 z-50" style={{ background: "rgba(13,10,11,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid var(--dp-border)" }}>
             <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
               <div />
               <Link

@@ -26,13 +26,51 @@ const filterChips: { label: string; value: WineType | 'all'; icon: string }[] = 
 
 const POPULAR = ['Château Margaux', 'Opus One', 'Tignanello', 'Barolo DOCG', 'Malbec Mendoza', 'Dom Pérignon'];
 
+/* ── Curated editorial content (makes the page feel alive) ── */
+const CURATED_COLLECTIONS = [
+  {
+    title: 'Under R$100',
+    subtitle: 'Exceptional value finds',
+    icon: 'local_offer',
+    gradient: 'linear-gradient(135deg, #1E1418 0%, #2A1520 100%)',
+    query: 'best wines under 100 reais',
+  },
+  {
+    title: 'Bold Reds',
+    subtitle: 'Full body, rich flavor',
+    icon: 'local_fire_department',
+    gradient: 'linear-gradient(135deg, #1E1014 0%, #2E1520 100%)',
+    query: 'bold red wines Cabernet Malbec',
+  },
+  {
+    title: 'Summer Whites',
+    subtitle: 'Crisp & refreshing',
+    icon: 'wb_sunny',
+    gradient: 'linear-gradient(135deg, #141820 0%, #182028 100%)',
+    query: 'crisp white wines Sauvignon Blanc',
+  },
+  {
+    title: 'Blind Tasting Picks',
+    subtitle: 'Crowd favorites revealed',
+    icon: 'masks',
+    gradient: 'linear-gradient(135deg, #181418 0%, #241828 100%)',
+    query: 'popular blind tasting wines',
+  },
+];
+
+const REGIONS = [
+  { name: 'Bordeaux',    emoji: '🇫🇷', img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200&h=120&fit=crop' },
+  { name: 'Tuscany',     emoji: '🇮🇹', img: 'https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?w=200&h=120&fit=crop' },
+  { name: 'Mendoza',     emoji: '🇦🇷', img: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=200&h=120&fit=crop' },
+  { name: 'Napa Valley', emoji: '🇺🇸', img: 'https://images.unsplash.com/photo-1474722883778-792e7990302f?w=200&h=120&fit=crop' },
+  { name: 'Douro',       emoji: '🇵🇹', img: 'https://images.unsplash.com/photo-1560493676-04071c5f467b?w=200&h=120&fit=crop' },
+];
+
 export const SearchPage: React.FC = () => {
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<Wine[]>([]);
   const [activeFilter, setActiveFilter] = useState<WineType | 'all'>('all');
-
-  // Autocomplete state
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState(false);
@@ -44,7 +82,6 @@ export const SearchPage: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounced suggestions fetch
   const fetchSuggestions = useCallback(async (q: string) => {
     if (q.trim().length < 2) { setSuggestions([]); return; }
     setLoadingSuggestions(true);
@@ -59,8 +96,7 @@ export const SearchPage: React.FC = () => {
       setSuggestions([]);
       setSuggestionsError(true);
       setShowDropdown(true);
-    }
-    finally { setLoadingSuggestions(false); }
+    } finally { setLoadingSuggestions(false); }
   }, []);
 
   useEffect(() => {
@@ -70,7 +106,6 @@ export const SearchPage: React.FC = () => {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query, fetchSuggestions]);
 
-  // Click outside to close dropdown
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
@@ -99,9 +134,7 @@ export const SearchPage: React.FC = () => {
       }
     } catch {
       toast.error('Search failed. Check your connection.');
-    } finally {
-      setSearching(false);
-    }
+    } finally { setSearching(false); }
   };
 
   const handleSuggestionClick = (s: string) => {
@@ -117,19 +150,10 @@ export const SearchPage: React.FC = () => {
       if (e.key === 'Enter') handleSearch();
       return;
     }
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setActiveSuggestion(i => Math.min(i + 1, items.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setActiveSuggestion(i => Math.max(i - 1, -1));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (activeSuggestion >= 0) handleSuggestionClick(items[activeSuggestion]);
-      else handleSearch();
-    } else if (e.key === 'Escape') {
-      setShowDropdown(false);
-    }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveSuggestion(i => Math.min(i + 1, items.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveSuggestion(i => Math.max(i - 1, -1)); }
+    else if (e.key === 'Enter') { e.preventDefault(); activeSuggestion >= 0 ? handleSuggestionClick(items[activeSuggestion]) : handleSearch(); }
+    else if (e.key === 'Escape') setShowDropdown(false);
   };
 
   const filtered = activeFilter === 'all' ? results : results.filter(w => w.type === activeFilter);
@@ -137,19 +161,17 @@ export const SearchPage: React.FC = () => {
   const showRecent = query.trim().length === 0 && recentSearches.length > 0;
 
   return (
-    <div className="space-y-5 max-w-4xl mx-auto pb-6">
+    <div style={{ maxWidth: 600, margin: '0 auto', paddingBottom: 24 }}>
 
-      {/* ── Search bar with autocomplete ── */}
-      <div className="relative">
-        <div className="relative">
-          {/* Icon */}
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+      {/* ── Search bar ── */}
+      <div style={{ position: 'relative', marginBottom: 20 }}>
+        <div style={{ position: 'relative' }}>
+          <div style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 10 }}>
             {searching
-              ? <div className="w-5 h-5 border-2 border-t-2 rounded-full animate-spin" style={{ borderColor: 'var(--md-outline-variant)', borderTopColor: 'var(--md-primary)' }} />
-              : <span className="material-symbols-rounded" style={{ fontSize: 24, color: 'var(--md-on-surface-variant)' }}>search</span>
+              ? <div style={{ width: 20, height: 20, border: '2px solid var(--dp-cream-faint)', borderTopColor: 'var(--dp-gold)', borderRadius: '50%' }} className="animate-spin" />
+              : <span className="material-symbols-rounded" style={{ fontSize: 22, color: 'var(--dp-cream-faint)' }}>search</span>
             }
           </div>
-
           <input
             ref={inputRef}
             type="text"
@@ -161,112 +183,101 @@ export const SearchPage: React.FC = () => {
             autoComplete="off"
             spellCheck={false}
             style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              paddingLeft: 52,
-              paddingRight: query ? 52 : 16,
-              height: 56,
+              width: '100%', boxSizing: 'border-box',
+              paddingLeft: 52, paddingRight: query ? 52 : 16,
+              height: 52,
               borderRadius: 'var(--shape-full)',
-              background: 'var(--md-surface-container-high)',
-              border: 'none',
+              background: 'var(--dp-surface-2)',
+              border: '1px solid var(--dp-border)',
               outline: 'none',
-              boxShadow: '0 1px 2px rgba(0,0,0,.08), 0 2px 6px 2px rgba(0,0,0,.04)',
-              fontSize: 16,
-              letterSpacing: '0.5px',
-              color: 'var(--md-on-surface)',
+              fontSize: 15, fontWeight: 500,
+              letterSpacing: '0.3px',
+              color: 'var(--dp-cream)',
               fontFamily: 'inherit',
             }}
           />
-
-          {/* Clear button */}
           {query && (
             <button
               onClick={() => { setQuery(''); setSuggestions([]); setShowDropdown(false); inputRef.current?.focus(); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 btn-icon"
-              style={{ width: 40, height: 40 }}
+              style={{
+                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                width: 36, height: 36, borderRadius: '50%', border: 'none',
+                background: 'transparent', cursor: 'pointer', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+              }}
             >
-              <span className="material-symbols-rounded ms-20" style={{ color: 'var(--md-on-surface-variant)' }}>close</span>
+              <span className="material-symbols-rounded" style={{ fontSize: 20, color: 'var(--dp-cream-faint)' }}>close</span>
             </button>
           )}
         </div>
 
-        {/* ── Autocomplete dropdown ── */}
+        {/* Autocomplete dropdown */}
         {showDropdown && (dropdownItems.length > 0 || showRecent || (loadingSuggestions && query.trim().length >= 2) || (suggestionsError && query.trim().length >= 2)) && (
-          <div ref={dropdownRef} className="search-dropdown">
-
-            {/* Loading state */}
+          <div ref={dropdownRef} style={{
+            position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+            background: 'var(--dp-surface-3)', borderRadius: 16,
+            border: '1px solid var(--dp-border-medium)',
+            marginTop: 8, overflow: 'hidden',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          }}>
             {loadingSuggestions && dropdownItems.length === 0 && (
-              <div className="flex items-center gap-3 px-4 py-3">
-                <div className="w-4 h-4 border-2 border-burgundy/20 border-t-burgundy rounded-full animate-spin flex-shrink-0" />
-                <span className="text-sm text-charcoal-muted">Finding suggestions...</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px' }}>
+                <div style={{ width: 16, height: 16, border: '2px solid var(--dp-cream-faint)', borderTopColor: 'var(--dp-gold)', borderRadius: '50%' }} className="animate-spin" />
+                <span style={{ fontSize: 14, color: 'var(--dp-cream-faint)' }}>Finding suggestions...</span>
               </div>
             )}
-
-            {/* Error state */}
             {suggestionsError && !loadingSuggestions && dropdownItems.length === 0 && query.trim().length >= 2 && (
-              <div className="px-4 py-3 text-sm text-charcoal-muted">
-                <span>AI suggestions unavailable — press Enter to search</span>
+              <div style={{ padding: '12px 16px', fontSize: 14, color: 'var(--dp-cream-faint)' }}>
+                AI suggestions unavailable — press Enter to search
               </div>
             )}
-
-            {/* AI suggestions */}
             {dropdownItems.length > 0 && (
               <>
-                <div className="px-4 pt-3 pb-1.5">
-                  <span className="section-label">Suggestions</span>
+                <div style={{ padding: '12px 16px 6px' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--dp-cream-faint)' }}>Suggestions</span>
                 </div>
                 {dropdownItems.map((s, i) => (
                   <button
                     key={s}
-                    className={`search-suggestion w-full text-left ${activeSuggestion === i ? 'bg-cream' : ''}`}
+                    style={{
+                      width: '100%', textAlign: 'left' as const, display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '10px 16px', border: 'none', cursor: 'pointer',
+                      background: activeSuggestion === i ? 'var(--dp-surface-4)' : 'transparent',
+                      color: 'var(--dp-cream)', fontFamily: 'inherit', fontSize: 14, fontWeight: 500,
+                    }}
                     onMouseDown={() => handleSuggestionClick(s)}
                     onMouseEnter={() => setActiveSuggestion(i)}
                   >
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ background: 'var(--md-primary-container)' }}
-                    >
-                      <span className="material-symbols-rounded ms-filled" style={{ fontSize: 16, color: 'var(--md-on-primary-container)' }}>wine_bar</span>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--dp-gold-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span className="material-symbols-rounded ms-filled" style={{ fontSize: 16, color: 'var(--dp-gold)' }}>wine_bar</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      {/* Highlight matching part */}
-                      <HighlightMatch text={s} query={query} />
-                    </div>
-                    <svg className="w-4 h-4 text-charcoal-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7v10" />
-                    </svg>
+                    <HighlightMatch text={s} query={query} />
                   </button>
                 ))}
               </>
             )}
-
-            {/* Recent searches */}
             {showRecent && (
               <>
-                <div className="px-4 pt-3 pb-1.5 flex items-center justify-between">
-                  <span className="section-label">Recent</span>
+                <div style={{ padding: '12px 16px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--dp-cream-faint)' }}>Recent</span>
                   <button
-                    className="text-xs text-charcoal-muted hover:text-burgundy transition-colors"
+                    style={{ fontSize: 12, color: 'var(--dp-cream-faint)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
                     onMouseDown={() => { localStorage.removeItem(RECENT_KEY); setRecentSearches([]); setShowDropdown(false); }}
-                  >
-                    Clear
-                  </button>
+                  >Clear</button>
                 </div>
                 {recentSearches.map((r, i) => (
                   <button
                     key={`recent-${i}`}
-                    className="search-suggestion w-full text-left"
+                    style={{
+                      width: '100%', textAlign: 'left' as const, display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '10px 16px', border: 'none', cursor: 'pointer',
+                      background: 'transparent', fontFamily: 'inherit', fontSize: 14,
+                      color: 'var(--dp-cream-muted)',
+                    }}
                     onMouseDown={() => handleSuggestionClick(r)}
                   >
-                    <div className="w-8 h-8 rounded-full bg-cream-dark flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-charcoal-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <span className="flex-1 text-sm text-charcoal">{r}</span>
-                    <svg className="w-4 h-4 text-charcoal-muted flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7v10" />
-                    </svg>
+                    <span className="material-symbols-rounded" style={{ fontSize: 18, color: 'var(--dp-cream-faint)' }}>history</span>
+                    <span style={{ flex: 1 }}>{r}</span>
                   </button>
                 ))}
               </>
@@ -275,25 +286,35 @@ export const SearchPage: React.FC = () => {
         )}
       </div>
 
-      {/* ── Filter chips MD3 ── */}
-      <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', paddingRight: 16 }}>
+      {/* ── Filter chips ── */}
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', marginBottom: 24 }}>
         {filterChips.map(chip => {
           const active = activeFilter === chip.value;
           return (
             <button
               key={chip.value}
               onClick={() => setActiveFilter(chip.value)}
-              className="chip whitespace-nowrap flex items-center gap-2"
-              style={active ? {
-                background: 'var(--md-secondary-container)',
-                borderColor: 'var(--md-secondary-container)',
-                color: 'var(--md-on-secondary-container)',
-              } : {}}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '8px 16px', height: 36,
+                borderRadius: 'var(--shape-full)',
+                fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap' as const,
+                cursor: 'pointer', border: '1px solid',
+                fontFamily: 'inherit',
+                transition: 'all 0.2s ease',
+                ...(active ? {
+                  background: 'var(--dp-gold-faint)',
+                  borderColor: 'var(--dp-gold)',
+                  color: 'var(--dp-gold)',
+                } : {
+                  background: 'transparent',
+                  borderColor: 'var(--dp-border-medium)',
+                  color: 'var(--dp-cream-muted)',
+                }),
+              }}
             >
-              {active && (
-                <span className="material-symbols-rounded ms-filled" style={{ fontSize: 18, lineHeight: 1 }}>check</span>
-              )}
-              <span className="material-symbols-rounded ms-20" style={{ fontSize: 18, lineHeight: 1 }}>{chip.icon}</span>
+              {active && <span className="material-symbols-rounded ms-filled" style={{ fontSize: 16 }}>check</span>}
+              <span className="material-symbols-rounded" style={{ fontSize: 16, opacity: active ? 1 : 0.7 }}>{chip.icon}</span>
               {chip.label}
             </button>
           );
@@ -302,14 +323,13 @@ export const SearchPage: React.FC = () => {
 
       {/* ── Searching skeleton ── */}
       {searching && (
-        <div className="space-y-3 fade-in">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }} className="fade-in">
           {[1,2].map(i => (
-            <div key={i} className="card p-4 flex gap-3">
-              <div className="w-14 h-14 rounded-xl shimmer flex-shrink-0" />
-              <div className="flex-1 space-y-2 py-1">
-                <div className="h-4 shimmer rounded-full w-3/4" />
-                <div className="h-3 shimmer rounded-full w-1/2" />
-                <div className="h-3 shimmer rounded-full w-2/3" />
+            <div key={i} style={{ background: 'var(--dp-surface-1)', borderRadius: 16, padding: 16, display: 'flex', gap: 12 }}>
+              <div style={{ width: 56, height: 56, borderRadius: 12, background: 'var(--dp-surface-3)' }} className="shimmer" />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
+                <div style={{ height: 16, borderRadius: 8, width: '75%', background: 'var(--dp-surface-3)' }} className="shimmer" />
+                <div style={{ height: 12, borderRadius: 8, width: '50%', background: 'var(--dp-surface-3)' }} className="shimmer" />
               </div>
             </div>
           ))}
@@ -318,19 +338,17 @@ export const SearchPage: React.FC = () => {
 
       {/* ── Results ── */}
       {!searching && filtered.length > 0 && (
-        <div className="space-y-3 fade-in">
-          <div className="flex items-center justify-between">
-            <span className="section-label">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
-            {results.length > 0 && (
-              <button
-                onClick={() => setResults([])}
-                className="text-xs text-charcoal-muted hover:text-burgundy transition-colors font-medium"
-              >
-                Clear all
-              </button>
-            )}
+        <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: 'var(--dp-cream-faint)' }}>
+              {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+            </span>
+            <button
+              onClick={() => setResults([])}
+              style={{ fontSize: 13, color: 'var(--dp-gold)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500, fontFamily: 'inherit' }}
+            >Clear all</button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
             {filtered.map((wine, i) => (
               <div key={wine.id} className={`fade-in fade-in-delay-${Math.min(i, 3) as 0|1|2|3}`}>
                 <WineCard wine={wine} />
@@ -340,51 +358,121 @@ export const SearchPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Empty state ── */}
+      {/* ── Discovery content (when no search results) ── */}
       {!searching && results.length === 0 && (
-        <div className="text-center py-8 fade-in" style={{ width: "100%" }}>
-          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
-            style={{ background: 'var(--md-primary-container)', marginLeft: 'auto', marginRight: 'auto' }}>
-            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 40, color: 'var(--md-on-primary-container)' }}>wine_bar</span>
-          </div>
-          <h3 className="type-title-large mb-1.5" style={{ fontFamily: "Playfair Display, serif", color: "var(--md-on-surface)", wordBreak: "break-word", overflowWrap: "break-word" }}>
-            Discover Wines
-          </h3>
-          <p className="type-body-medium mb-7 max-w-xs mx-auto" style={{ color: 'var(--md-on-surface-variant)' }}>
-            Search any wine by name, region, or grape variety
-          </p>
+        <div className="fade-in">
 
-          {/* Popular searches */}
-          <div className="space-y-3">
-            <p className="type-label-large" style={{ color: "var(--md-on-surface-variant)", textTransform: "uppercase", letterSpacing: "0.08em", wordBreak: "break-word" }}>Popular Searches</p>
-            <div className="flex flex-wrap justify-center gap-2 px-2">
-              {POPULAR.map(s => (
+          {/* Curated collections */}
+          <div style={{ marginBottom: 32 }}>
+            <p style={{
+              fontSize: 11, fontWeight: 600, letterSpacing: '0.12em',
+              textTransform: 'uppercase' as const, color: 'var(--dp-gold)',
+              marginBottom: 16,
+            }}>Collections</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {CURATED_COLLECTIONS.map(col => (
                 <button
-                  key={s}
-                  onClick={() => { setQuery(s); handleSearch(s); }}
-                  className="chip whitespace-nowrap"
-                  style={{ minHeight: 40 }}
+                  key={col.title}
+                  onClick={() => { setQuery(col.query); handleSearch(col.query); }}
+                  style={{
+                    textAlign: 'left' as const, border: '1px solid var(--dp-border)',
+                    borderRadius: 16, padding: '20px 16px',
+                    background: col.gradient,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    display: 'flex', flexDirection: 'column', gap: 8,
+                    transition: 'border-color 0.2s',
+                  }}
                 >
-                  {s}
+                  <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--dp-gold)' }}>
+                    {col.icon}
+                  </span>
+                  <div>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--dp-cream)', marginBottom: 2 }}>{col.title}</p>
+                    <p style={{ fontSize: 12, color: 'var(--dp-cream-faint)', lineHeight: 1.4 }}>{col.subtitle}</p>
+                  </div>
                 </button>
               ))}
             </div>
           </div>
+
+          {/* Regions */}
+          <div style={{ marginBottom: 32 }}>
+            <p style={{
+              fontSize: 11, fontWeight: 600, letterSpacing: '0.12em',
+              textTransform: 'uppercase' as const, color: 'var(--dp-gold)',
+              marginBottom: 16,
+            }}>Explore by Region</p>
+
+            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+              {REGIONS.map(region => (
+                <button
+                  key={region.name}
+                  onClick={() => { setQuery(`best wines from ${region.name}`); handleSearch(`best wines from ${region.name}`); }}
+                  style={{
+                    flexShrink: 0, width: 120,
+                    border: '1px solid var(--dp-border)', borderRadius: 16,
+                    overflow: 'hidden', cursor: 'pointer',
+                    background: 'var(--dp-surface-1)',
+                    fontFamily: 'inherit',
+                    textAlign: 'center' as const,
+                  }}
+                >
+                  <div style={{
+                    width: '100%', height: 72,
+                    background: `url(${region.img}) center/cover`,
+                    opacity: 0.7,
+                  }} />
+                  <div style={{ padding: '10px 8px 12px' }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--dp-cream)' }}>{region.name}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Popular searches */}
+          <div>
+            <p style={{
+              fontSize: 11, fontWeight: 600, letterSpacing: '0.12em',
+              textTransform: 'uppercase' as const, color: 'var(--dp-gold)',
+              marginBottom: 16,
+            }}>Popular Searches</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {POPULAR.map(s => (
+                <button
+                  key={s}
+                  onClick={() => { setQuery(s); handleSearch(s); }}
+                  style={{
+                    padding: '8px 16px', height: 36,
+                    borderRadius: 'var(--shape-full)',
+                    border: '1px solid var(--dp-border-medium)',
+                    background: 'transparent',
+                    color: 'var(--dp-cream-muted)',
+                    fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap' as const,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    transition: 'all 0.2s ease',
+                  }}
+                >{s}</button>
+              ))}
+            </div>
+          </div>
+
         </div>
       )}
     </div>
   );
 };
 
-/* ── Highlight matching query in suggestion text ── */
+/* ── Highlight matching query ── */
 function HighlightMatch({ text, query }: { text: string; query: string }) {
-  if (!query.trim()) return <span className="text-sm text-charcoal font-medium">{text}</span>;
+  if (!query.trim()) return <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--dp-cream)' }}>{text}</span>;
   const idx = text.toLowerCase().indexOf(query.toLowerCase().trim());
-  if (idx === -1) return <span className="text-sm text-charcoal font-medium">{text}</span>;
+  if (idx === -1) return <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--dp-cream)' }}>{text}</span>;
   return (
-    <span className="text-sm font-medium text-charcoal">
+    <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--dp-cream)', flex: 1, minWidth: 0 }}>
       {text.slice(0, idx)}
-      <mark className="bg-gold-glow text-charcoal not-italic font-bold" style={{ background: 'var(--gold-glow)' }}>
+      <mark style={{ background: 'var(--dp-gold-faint)', color: 'var(--dp-gold-light)', fontWeight: 700 }}>
         {text.slice(idx, idx + query.trim().length)}
       </mark>
       {text.slice(idx + query.trim().length)}

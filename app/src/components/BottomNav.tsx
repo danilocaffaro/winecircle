@@ -25,7 +25,9 @@ export const BottomNav: React.FC = () => {
     <nav
       className="fixed bottom-0 left-0 right-0 md:hidden safe-area-bottom"
       style={{
-        background: 'var(--md-surface-container)',
+        background: 'rgba(13,10,11,0.92)',
+        backdropFilter: 'blur(16px)',
+        borderTop: '1px solid var(--dp-border)',
         zIndex: 200,
       }}
     >
