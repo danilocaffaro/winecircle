@@ -13,11 +13,11 @@ export const EventDetail: React.FC = () => {
   if (!event || !club) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="w-16 h-16 rounded-full bg-cream-dark flex items-center justify-center mb-4">
-          <span className="text-3xl">😕</span>
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'var(--md-surface-container-highest)' }}>
+          <span className="material-symbols-rounded" style={{ fontSize: 32, color: 'var(--md-on-surface-variant)' }}>error_outline</span>
         </div>
-        <p className="text-charcoal-light mb-3">Event not found</p>
-        <Link to="/clubs" className="text-burgundy font-semibold text-sm underline underline-offset-2">Back to clubs</Link>
+        <p className="type-body-medium mb-3" style={{ color: 'var(--md-on-surface-variant)' }}>Event not found</p>
+        <Link to="/clubs" className="btn-text">Back to clubs</Link>
       </div>
     );
   }
@@ -33,53 +33,72 @@ export const EventDetail: React.FC = () => {
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
+      {/* Back */}
+      <Link to={`/clubs/${club.id}`} className="btn-text inline-flex items-center" style={{ paddingLeft: 0 }}>
+        <span className="material-symbols-rounded" style={{ fontSize: 20 }}>arrow_back</span>
+        {club.name}
+      </Link>
+
       {/* Header */}
-      <div>
-        <Link to={`/clubs/${club.id}`} className="text-sm text-gold-dark hover:text-gold font-medium inline-flex items-center gap-1 transition-colors min-h-[44px]">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-          {club.name}
-        </Link>
-        <div className="flex justify-between items-start mt-2">
-          <div className="flex-1 min-w-0 mr-3">
-            <h1 className="text-2xl font-bold text-burgundy" style={{ fontFamily: 'Playfair Display, serif' }}>
-              {event.name}
-            </h1>
-            <p className="text-sm text-charcoal-light mt-1">
-              {new Date(event.date).toLocaleDateString('pt-BR')} · {event.type === 'blind' ? '🙈 Blind' : '👀 Open'}
-            </p>
+      <div className="flex justify-between items-start">
+        <div className="flex-1 min-w-0 mr-3">
+          <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
+            {event.name}
+          </h1>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="material-symbols-rounded" style={{ fontSize: 16, color: 'var(--md-on-surface-variant)' }}>event</span>
+            <span className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
+              {new Date(event.date).toLocaleDateString('pt-BR')}
+            </span>
+            <span style={{ color: 'var(--md-outline)' }}>·</span>
+            <span className="flex items-center gap-1 type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
+              <span className="material-symbols-rounded" style={{ fontSize: 16 }}>{event.type === 'blind' ? 'visibility_off' : 'visibility'}</span>
+              {event.type === 'blind' ? 'Blind' : 'Open'}
+            </span>
           </div>
-          <span className={`text-[11px] font-semibold px-3 py-1.5 rounded-full shrink-0 ${
-            event.status === 'completed' ? 'bg-green-50 text-green-700' :
-            event.status === 'tasting' ? 'bg-gold/15 text-gold-dark' :
-            'bg-cream-dark text-charcoal-light'
-          }`}>
-            {event.status}
-          </span>
         </div>
+        <span className="chip chip-selected type-label-small" style={{
+          background: event.status === 'completed' ? 'var(--md-tertiary-container)' :
+                     event.status === 'tasting' ? 'var(--md-secondary-container)' :
+                     'var(--md-surface-container-highest)',
+          color: event.status === 'completed' ? 'var(--md-on-tertiary-container)' :
+                 event.status === 'tasting' ? 'var(--md-on-secondary-container)' :
+                 'var(--md-on-surface-variant)',
+          borderColor: 'transparent',
+        }}>
+          {event.status}
+        </span>
       </div>
 
       {/* Participants */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-cream-dark">
-        <h2 className="font-semibold text-burgundy mb-3 text-sm" style={{ fontFamily: 'Playfair Display, serif' }}>
-          👥 Participants ({members.length})
-        </h2>
+      <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)' }}>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20, color: 'var(--md-primary)' }}>group</span>
+          <h2 className="type-title-medium" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
+            Participants ({members.length})
+          </h2>
+        </div>
         <div className="flex flex-wrap gap-2">
           {members.map(m => (
-            <span key={m.id} className="flex items-center gap-1.5 bg-cream px-3 py-2 rounded-full text-sm min-h-[36px]">
-              <span className="w-6 h-6 rounded-full bg-burgundy/10 flex items-center justify-center text-[11px] font-semibold text-burgundy">
+            <span key={m.id} className="flex items-center gap-1.5 px-3 py-2 rounded-full" style={{ background: 'var(--md-surface-container)', minHeight: 36 }}>
+              <span className="w-6 h-6 rounded-full flex items-center justify-center type-label-small font-bold"
+                style={{ background: 'var(--md-primary-container)', color: 'var(--md-on-primary-container)' }}>
                 {m.name.charAt(0)}
               </span>
-              <span className="font-medium text-charcoal text-xs">{m.name}</span>
+              <span className="type-label-medium" style={{ color: 'var(--md-on-surface)' }}>{m.name}</span>
             </span>
           ))}
         </div>
       </div>
 
-      {/* Wines — responsive grid on desktop */}
+      {/* Wines */}
       <div>
-        <h2 className="font-semibold text-burgundy mb-3 text-sm" style={{ fontFamily: 'Playfair Display, serif' }}>
-          🍷 Wines ({event.wines.length})
-        </h2>
+        <div className="flex items-center gap-2 mb-3">
+          <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20, color: 'var(--md-primary)' }}>wine_bar</span>
+          <h2 className="type-title-medium" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
+            Wines ({event.wines.length})
+          </h2>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {event.wines.map((wine, i) => (
             <WineCard
@@ -92,47 +111,37 @@ export const EventDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Actions — 48px buttons */}
+      {/* Actions */}
       <div className="space-y-3">
         {event.status === 'planning' && (
           <>
-            <button
-              onClick={startTasting}
-              className="w-full bg-burgundy text-cream py-3.5 rounded-2xl font-semibold text-base hover:bg-burgundy-light active:bg-burgundy-dark transition-colors shadow-md min-h-[48px]"
-            >
-              🍷 Start Tasting
+            <button onClick={startTasting} className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
+              <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>wine_bar</span>
+              Start Tasting
             </button>
-            <Link
-              to={`/events/${event.id}/edit`}
-              className="bg-white border border-cream-dark text-charcoal py-3.5 rounded-2xl font-medium hover:bg-cream transition-colors min-h-[48px] flex items-center justify-center"
-            >
-              ✏️ Edit Event
+            <Link to={`/events/${event.id}/edit`} className="btn-outlined w-full flex items-center justify-center" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
+              <span className="material-symbols-rounded" style={{ fontSize: 20 }}>edit</span>
+              Edit Event
             </Link>
           </>
         )}
 
         {event.status === 'tasting' && (
-          <Link
-            to={`/events/${event.id}/tasting`}
-            className="bg-burgundy text-cream py-3.5 rounded-2xl font-semibold text-base hover:bg-burgundy-light active:bg-burgundy-dark transition-colors shadow-lg min-h-[48px] flex items-center justify-center"
-          >
-            🍷 Continue Tasting
+          <Link to={`/events/${event.id}/tasting`} className="btn-primary w-full flex items-center justify-center" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
+            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>wine_bar</span>
+            Continue Tasting
           </Link>
         )}
 
         {event.status === 'completed' && (
           <>
-            <Link
-              to={`/events/${event.id}/results`}
-              className="bg-burgundy text-cream py-3.5 rounded-2xl font-semibold text-base hover:bg-burgundy-light active:bg-burgundy-dark transition-colors shadow-lg min-h-[48px] flex items-center justify-center"
-            >
-              🏆 View Results
+            <Link to={`/events/${event.id}/results`} className="btn-primary w-full flex items-center justify-center" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
+              <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>emoji_events</span>
+              View Results
             </Link>
-            <Link
-              to={`/events/${event.id}/expenses`}
-              className="bg-gold text-white py-3.5 rounded-2xl font-semibold text-base hover:bg-gold-dark active:bg-gold-dark transition-colors shadow-lg min-h-[48px] flex items-center justify-center"
-            >
-              💰 Manage Expenses
+            <Link to={`/events/${event.id}/expenses`} className="btn-tonal w-full flex items-center justify-center" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
+              <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>payments</span>
+              Manage Expenses
             </Link>
           </>
         )}

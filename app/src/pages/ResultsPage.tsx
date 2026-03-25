@@ -280,8 +280,10 @@ export const ResultsPage: React.FC = () => {
                           </div>
                           <span className="type-label-medium" style={{ color: 'var(--md-on-surface)' }}>{member!.name}</span>
                           {note.rating > 0 && (
-                            <span className="type-label-small ml-auto" style={{ color: 'var(--md-tertiary)' }}>
-                              {Array(note.rating).fill('★').join('')}
+                            <span className="flex items-center ml-auto">
+                              {[...Array(note.rating)].map((_, i) => (
+                                <span key={i} className="material-symbols-rounded ms-filled" style={{ fontSize: 14, color: 'var(--md-tertiary)' }}>star</span>
+                              ))}
                             </span>
                           )}
                         </div>

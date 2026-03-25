@@ -1,6 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/* ── Self-hosted Material Symbols Rounded (works in headless Chrome) ── */
+@font-face {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-weight: 100 700;
+  src: url('/fonts/material-symbols-rounded.woff2') format('woff2');
+}
+
 /* ═══════════════════════════════════════════════════════
    MATERIAL DESIGN 3 — Color Scheme (seed #722F37 burgundy)
    Generated via Material Theme Builder

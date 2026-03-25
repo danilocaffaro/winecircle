@@ -24,7 +24,7 @@ export const ScanPage: React.FC = () => {
         const wine = await scanWineLabel(base64, file.type);
         if (wine) {
           setResult(wine);
-          toast.success(`Found: ${wine.name} 🍷`);
+          toast.success(`Found: ${wine.name}`);
         } else {
           toast.error('Could not identify the wine label');
         }

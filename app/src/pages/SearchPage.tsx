@@ -93,7 +93,7 @@ export const SearchPage: React.FC = () => {
       const wine = await searchWine(q);
       if (wine) {
         setResults(prev => [wine, ...prev.filter(w => w.name !== wine.name)]);
-        toast.success(`Found: ${wine.name}`, { icon: '🍷' });
+        toast.success(`Found: ${wine.name}`);
       } else {
         toast.error('No results found');
       }
@@ -343,7 +343,7 @@ export const SearchPage: React.FC = () => {
       {!searching && results.length === 0 && (
         <div className="text-center py-8 fade-in">
           <div className="w-24 h-24 mx-auto mb-5 rounded-full wine-gradient-red flex items-center justify-center shadow-lg">
-            <span className="text-5xl">🍷</span>
+            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 48, color: 'var(--md-outline)' }}>wine_bar</span>
           </div>
           <h3 className="font-bold text-burgundy text-xl mb-1.5" style={{ fontFamily: 'Playfair Display, serif' }}>
             Discover Wines

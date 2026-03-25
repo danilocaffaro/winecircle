@@ -21,155 +21,117 @@ export const ExpensePage: React.FC = () => {
   if (!event || !club) {
     return (
       <div className="text-center py-16">
-        <span className="text-4xl block mb-3">😕</span>
-        <p className="text-charcoal-light">Event not found</p>
+        <span className="material-symbols-rounded" style={{ fontSize: 40, color: 'var(--md-outline)' }}>error_outline</span>
+        <p className="type-body-medium mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>Event not found</p>
       </div>
     );
   }
 
   const updatePayment = (memberId: string, amount: number) => {
-    setPayments(prev =>
-      prev.map(p => p.memberId === memberId ? { ...p, amount } : p)
-    );
+    setPayments(prev => prev.map(p => p.memberId === memberId ? { ...p, amount } : p));
     setCalculated(false);
   };
 
   const splits = calculated ? calculateExpenseSplits(members, totalCost, payments) : [];
 
   const handleCalculate = () => {
-    if (totalCost <= 0) {
-      toast.error('Enter the total cost');
-      return;
-    }
+    if (totalCost <= 0) { toast.error('Enter the total cost'); return; }
     const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
     if (Math.abs(totalPaid - totalCost) > 0.01) {
       toast.error(`Payments (R$${totalPaid.toFixed(2)}) don't match total (R$${totalCost.toFixed(2)})`);
       return;
     }
     setCalculated(true);
-
     const expSplits = calculateExpenseSplits(members, totalCost, payments);
-    const updated = {
-      ...event,
-      expenses: { totalCost, payments, splits: expSplits },
-    };
-    saveEvent(updated);
+    saveEvent({ ...event, expenses: { totalCost, payments, splits: expSplits } });
     toast.success('Expenses calculated!');
   };
 
-  const getMemberName = (memberId: string) =>
-    members.find(m => m.id === memberId)?.name || 'Unknown';
-
+  const getMemberName = (memberId: string) => members.find(m => m.id === memberId)?.name || 'Unknown';
   const sharePerPerson = members.length > 0 ? totalCost / members.length : 0;
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      <div>
-        <Link to={`/events/${event.id}`} className="text-sm text-gold-dark hover:text-gold font-medium mb-2 inline-flex items-center gap-1 transition-colors min-h-[44px]">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-          Back to event
-        </Link>
-        <h1 className="text-2xl font-bold text-burgundy mt-1" style={{ fontFamily: 'Playfair Display, serif' }}>
-          💰 Expenses
-        </h1>
-        <p className="text-sm text-charcoal-light mt-0.5">{event.name}</p>
-      </div>
+      <Link to={`/events/${event.id}`} className="btn-text inline-flex items-center" style={{ paddingLeft: 0 }}>
+        <span className="material-symbols-rounded" style={{ fontSize: 20 }}>arrow_back</span>
+        Back to event
+      </Link>
 
-      {/* Total Cost — 48px input */}
-      <div className="bg-white rounded-xl p-5 shadow-md border border-cream-dark">
-        <label className="block text-sm font-semibold text-charcoal mb-2">Total Cost (R$)</label>
-        <input
-          type="number"
-          value={totalCost || ''}
-          onChange={e => { setTotalCost(Number(e.target.value)); setCalculated(false); }}
-          placeholder="0.00"
-          step="0.01"
-          min="0"
-          className="w-full px-4 py-3 rounded-xl border border-cream-dark bg-white text-2xl font-bold text-burgundy text-center focus:ring-2 focus:ring-burgundy/40 focus:border-burgundy transition-shadow"
-          style={{ fontFamily: 'Playfair Display, serif', fontSize: '24px', minHeight: '56px' }}
-        />
+      <div className="flex items-center gap-2">
+        <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-primary)' }}>payments</span>
+        <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>Expenses</h1>
+      </div>
+      <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)', marginTop: -16 }}>{event.name}</p>
+
+      {/* Total Cost */}
+      <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)' }}>
+        <label className="type-label-large block mb-2" style={{ color: 'var(--md-on-surface)' }}>Total Cost (R$)</label>
+        <input type="number" value={totalCost || ''} onChange={e => { setTotalCost(Number(e.target.value)); setCalculated(false); }}
+          placeholder="0.00" step="0.01" min="0" className="input-outlined w-full text-center"
+          style={{ fontSize: 24, fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--md-primary)', minHeight: 56, borderRadius: 'var(--shape-large)' }} />
         {totalCost > 0 && members.length > 0 && (
-          <p className="text-center text-sm text-charcoal-light mt-2">
+          <p className="type-body-small text-center mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>
             R${sharePerPerson.toFixed(2)} per person ({members.length} members)
           </p>
         )}
       </div>
 
-      {/* Who Paid — 48px inputs */}
-      <div className="bg-white rounded-xl p-5 shadow-md border border-cream-dark">
-        <h2 className="font-semibold text-burgundy mb-4 text-base" style={{ fontFamily: 'Playfair Display, serif' }}>
-          Who Paid?
-        </h2>
+      {/* Who Paid */}
+      <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)' }}>
+        <h2 className="type-title-medium mb-4" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>Who Paid?</h2>
         <div className="space-y-3">
           {members.map(member => {
             const payment = payments.find(p => p.memberId === member.id);
             return (
               <div key={member.id} className="flex items-center gap-3">
-                <span className="text-sm font-medium flex-1 min-w-0 truncate text-charcoal">{member.name}</span>
+                <span className="type-body-medium flex-1 min-w-0 truncate" style={{ color: 'var(--md-on-surface)' }}>{member.name}</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-charcoal-light font-medium">R$</span>
-                  <input
-                    type="number"
-                    value={payment?.amount || ''}
-                    onChange={e => updatePayment(member.id, Number(e.target.value))}
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                    className="w-28 px-3 py-3 rounded-xl border border-cream-dark bg-white text-right text-charcoal font-medium focus:ring-2 focus:ring-burgundy/40 focus:border-burgundy transition-shadow"
-                    style={{ fontSize: '16px', minHeight: '48px' }}
-                  />
+                  <span className="type-label-small" style={{ color: 'var(--md-on-surface-variant)' }}>R$</span>
+                  <input type="number" value={payment?.amount || ''} onChange={e => updatePayment(member.id, Number(e.target.value))}
+                    placeholder="0.00" step="0.01" min="0" className="input-outlined w-28 text-right"
+                    style={{ minHeight: 48, borderRadius: 'var(--shape-medium)' }} />
                 </div>
               </div>
             );
           })}
         </div>
-        <div className="mt-4 pt-3 border-t border-cream-dark flex justify-between text-sm">
-          <span className="text-charcoal-light font-medium">Total paid:</span>
-          <span className={`font-bold ${
-            Math.abs(payments.reduce((s, p) => s + p.amount, 0) - totalCost) < 0.01
-              ? 'text-green-700' : 'text-red-600'
-          }`}>
+        <div className="mt-4 pt-3 flex justify-between type-body-medium" style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
+          <span style={{ color: 'var(--md-on-surface-variant)' }}>Total paid:</span>
+          <span style={{ fontWeight: 700, color: Math.abs(payments.reduce((s, p) => s + p.amount, 0) - totalCost) < 0.01 ? '#2E7D32' : 'var(--md-error)' }}>
             R${payments.reduce((s, p) => s + p.amount, 0).toFixed(2)}
           </span>
         </div>
       </div>
 
-      {/* Calculate Button — 48px */}
-      <button
-        onClick={handleCalculate}
-        className="w-full bg-burgundy text-cream py-3.5 rounded-xl font-semibold text-base hover:bg-burgundy-light active:bg-burgundy-dark transition-colors shadow-md min-h-[48px]"
-      >
+      <button onClick={handleCalculate} className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
+        <span className="material-symbols-rounded" style={{ fontSize: 20 }}>calculate</span>
         Calculate Splits
       </button>
 
-      {/* Results */}
+      {/* Transfers */}
       {calculated && splits.length > 0 && (
-        <div className="bg-white rounded-xl p-5 shadow-md border border-cream-dark">
-          <h2 className="font-semibold text-burgundy mb-4 text-base" style={{ fontFamily: 'Playfair Display, serif' }}>
-            💸 Transfers
-          </h2>
+        <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)' }}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20, color: 'var(--md-primary)' }}>swap_horiz</span>
+            <h2 className="type-title-medium" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>Transfers</h2>
+          </div>
           <div className="space-y-3">
             {splits.map((split, i) => {
               const toMember = members.find(m => m.id === split.toMemberId);
               return (
-                <div key={i} className="bg-cream rounded-xl p-4 space-y-2">
+                <div key={i} className="p-4 space-y-2" style={{ background: 'var(--md-surface-container)', borderRadius: 'var(--shape-large)' }}>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-burgundy">{getMemberName(split.fromMemberId)}</span>
-                    <svg className="w-4 h-4 text-charcoal-light shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                    <span className="text-sm font-semibold text-burgundy">{getMemberName(split.toMemberId)}</span>
-                    <span className="ml-auto text-sm font-bold text-gold-dark">R${split.amount.toFixed(2)}</span>
+                    <span className="type-label-large" style={{ color: 'var(--md-on-surface)' }}>{getMemberName(split.fromMemberId)}</span>
+                    <span className="material-symbols-rounded" style={{ fontSize: 16, color: 'var(--md-outline)' }}>arrow_forward</span>
+                    <span className="type-label-large" style={{ color: 'var(--md-on-surface)' }}>{getMemberName(split.toMemberId)}</span>
+                    <span className="ml-auto type-title-small font-bold" style={{ color: 'var(--md-tertiary)' }}>R${split.amount.toFixed(2)}</span>
                   </div>
                   {toMember?.pixKey && (
-                    <div className="flex items-center gap-2 pt-1 border-t border-cream-dark">
-                      <span className="bg-[#32BCAD] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">PIX</span>
-                      <span className="text-xs text-charcoal-light flex-1 truncate">{toMember.pixKey}</span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(toMember.pixKey!);
-                          toast.success('Chave Pix copiada! Abra seu banco e cole.');
-                        }}
-                        className="bg-[#32BCAD] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:opacity-90 transition-opacity shrink-0 min-h-[32px]"
-                      >
+                    <div className="flex items-center gap-2 pt-2" style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
+                      <span className="pix-badge">PIX</span>
+                      <span className="type-body-small flex-1 truncate" style={{ color: 'var(--md-on-surface-variant)' }}>{toMember.pixKey}</span>
+                      <button onClick={() => { navigator.clipboard.writeText(toMember.pixKey!); toast.success('Chave Pix copiada!'); }}
+                        style={{ background: '#32BCAD', color: 'white', fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 'var(--shape-medium)', border: 'none', cursor: 'pointer', minHeight: 32 }}>
                         Copiar Pix
                       </button>
                     </div>
@@ -182,9 +144,9 @@ export const ExpensePage: React.FC = () => {
       )}
 
       {calculated && splits.length === 0 && (
-        <div className="text-center py-6 bg-white rounded-xl shadow-md border border-cream-dark">
-          <span className="text-3xl block mb-2">✅</span>
-          <p className="text-sm text-charcoal-light font-medium">Everyone is even! No transfers needed.</p>
+        <div className="card-elevated text-center py-8" style={{ borderRadius: 'var(--shape-extra-large)' }}>
+          <span className="material-symbols-rounded ms-filled" style={{ fontSize: 40, color: '#2E7D32' }}>check_circle</span>
+          <p className="type-body-medium mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>Everyone is even! No transfers needed.</p>
         </div>
       )}
     </div>

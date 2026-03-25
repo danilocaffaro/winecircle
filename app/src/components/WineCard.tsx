@@ -147,7 +147,7 @@ export const WineCard: React.FC<Props> = ({ wine, blind, blindLabel, onClick, ch
               )}
               {wine.region && (
                 <span className="text-[11px] font-medium bg-cream-dark text-charcoal-light px-2.5 py-1 rounded-full">
-                  📍 {wine.region}{wine.country ? `, ${wine.country}` : ''}
+                  <span className="material-symbols-rounded" style={{ fontSize: 14 }}>location_on</span> {wine.region}{wine.country ? `, ${wine.country}` : ''}
                 </span>
               )}
             </div>

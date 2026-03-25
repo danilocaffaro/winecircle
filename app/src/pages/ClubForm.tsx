@@ -137,7 +137,7 @@ export const ClubForm: React.FC = () => {
 
           {members.length === 0 ? (
             <div className="text-center py-6 bg-cream/50 rounded-2xl border border-dashed border-cream-dark">
-              <span className="text-2xl block mb-1">👤</span>
+              <span className="material-symbols-rounded block mb-1" style={{ fontSize: 28, color: 'var(--md-on-surface-variant)' }}>person</span>
               <p className="text-xs text-charcoal-light">Add members to your club</p>
             </div>
           ) : (
@@ -161,7 +161,7 @@ export const ClubForm: React.FC = () => {
                     onClick={() => removeMember(member.id)}
                     className="text-red-400 hover:text-red-600 text-xs font-bold w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 transition-colors"
                   >
-                    ✕
+                    <span className="material-symbols-rounded" style={{ fontSize: 18 }}>close</span>
                   </button>
                 </div>
               ))}
