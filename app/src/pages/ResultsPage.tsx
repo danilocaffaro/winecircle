@@ -9,10 +9,9 @@ export const ResultsPage: React.FC = () => {
   const club = event ? getClub(event.clubId) : undefined;
   const [revealed, setRevealed] = useState(false);
   const [showPodium, setShowPodium] = useState(false);
-  const [revealStep, setRevealStep] = useState(0); // 0=hidden, 1=drumroll, 2=winner
+  const [revealStep, setRevealStep] = useState(0);
 
   useEffect(() => {
-    // Auto-start reveal animation after mount
     const t = setTimeout(() => setRevealStep(1), 400);
     return () => clearTimeout(t);
   }, []);
@@ -20,8 +19,8 @@ export const ResultsPage: React.FC = () => {
   if (!event || !club) {
     return (
       <div className="text-center py-16">
-        <span className="text-4xl block mb-3">😕</span>
-        <p className="text-charcoal-muted">Event not found</p>
+        <span className="material-symbols-rounded" style={{ fontSize: 40, color: 'var(--md-outline)' }}>error_outline</span>
+        <p className="type-body-medium mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>Event not found</p>
       </div>
     );
   }
@@ -32,10 +31,10 @@ export const ResultsPage: React.FC = () => {
   const winner = results[0];
 
   const getMedal = (rank: number) => {
-    if (rank === 1) return { emoji: '🥇', color: '#F59E0B', label: 'Gold' };
-    if (rank === 2) return { emoji: '🥈', color: '#9CA3AF', label: 'Silver' };
-    if (rank === 3) return { emoji: '🥉', color: '#CD7F32', label: 'Bronze' };
-    return { emoji: `#${rank}`, color: 'var(--charcoal-muted)', label: `#${rank}` };
+    if (rank === 1) return { icon: 'military_tech', color: 'var(--md-tertiary)', bg: 'var(--md-tertiary-container)', fg: 'var(--md-on-tertiary-container)' };
+    if (rank === 2) return { icon: 'military_tech', color: '#9CA3AF', bg: '#F3F4F6', fg: '#4B5563' };
+    if (rank === 3) return { icon: 'military_tech', color: '#CD7F32', bg: '#FEF3E2', fg: '#7C4A15' };
+    return { icon: 'tag', color: 'var(--md-outline)', bg: 'var(--md-surface-container)', fg: 'var(--md-on-surface-variant)' };
   };
 
   const doReveal = () => {
@@ -46,104 +45,98 @@ export const ResultsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-8">
+
       {/* Back */}
-      <Link
-        to={`/events/${event.id}`}
-        className="text-sm text-gold-dark hover:text-gold font-medium inline-flex items-center gap-1 transition-colors min-h-[44px]"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
+      <Link to={`/events/${event.id}`} className="btn-text inline-flex items-center" style={{ paddingLeft: 0 }}>
+        <span className="material-symbols-rounded" style={{ fontSize: 20 }}>arrow_back</span>
         Back to event
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-bold text-burgundy" style={{ fontFamily: 'Playfair Display, serif' }}>
-          🏆 Results
+      <div className="flex items-center gap-2">
+        <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-tertiary)' }}>emoji_events</span>
+        <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
+          Results
         </h1>
-        <p className="text-sm text-charcoal-muted mt-0.5">{event.name}</p>
       </div>
+      <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)', marginTop: -16 }}>{event.name}</p>
 
-      {/* ── REVEAL SEQUENCE ── */}
+      {/* ── REVEAL SCREEN ── */}
       {revealStep === 1 && !revealed && (
         <div
-          className="card p-8 text-center cursor-pointer fade-in"
+          className="card-elevated p-8 text-center cursor-pointer fade-in"
           onClick={doReveal}
           role="button"
-          aria-label="Reveal winner"
+          style={{ borderRadius: 'var(--shape-extra-large)' }}
         >
-          <div className="w-24 h-24 mx-auto mb-5 rounded-full wine-gradient-dark flex items-center justify-center shadow-xl">
-            <span className="text-5xl animate-pulse">🙈</span>
+          <div
+            className="w-24 h-24 mx-auto mb-5 rounded-full wine-gradient-dark flex items-center justify-center"
+            style={{ boxShadow: '0 4px 12px rgba(60,12,17,0.3)' }}
+          >
+            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 48, color: 'var(--md-primary-container)', animation: 'pulse 2s infinite' }}>
+              visibility_off
+            </span>
           </div>
-          <h2 className="text-xl font-bold text-burgundy mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <h2 className="type-title-large mb-2" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
             Ready for the Reveal?
           </h2>
-          <p className="text-charcoal-muted text-sm mb-6">
+          <p className="type-body-medium mb-6" style={{ color: 'var(--md-on-surface-variant)' }}>
             {event.type === 'blind'
               ? `The wines have been judged blind. Let's see which one conquered ${event.rankings.length} taster${event.rankings.length !== 1 ? 's' : ''}.`
               : `${event.rankings.length} taster${event.rankings.length !== 1 ? 's' : ''} have cast their votes. The winner is...`}
           </p>
-          <button className="btn-primary px-10 text-base">
-            🥁 Reveal Winner
+          <button className="btn-primary px-10">
+            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>music_note</span>
+            Reveal Winner
           </button>
         </div>
       )}
 
-      {/* ── WINNER SPOTLIGHT ── */}
+      {/* ── WINNER ── */}
       {revealStep === 2 && winner && (
         <div
-          className={`relative overflow-hidden rounded-3xl text-cream shadow-2xl transition-all duration-700 ${
-            revealed ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-          }`}
+          className={`relative overflow-hidden text-white transition-all duration-700 ${revealed ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
           style={{
             background: 'linear-gradient(135deg, #3D0C11 0%, #7B2D3A 40%, #9B3D4C 70%, #5A1F29 100%)',
+            borderRadius: 'var(--shape-extra-large)',
           }}
         >
-          {/* Decorative dots */}
-          <div className="absolute inset-0 opacity-[0.06]" style={{
-            backgroundImage: 'radial-gradient(circle at 25% 25%, white 1px, transparent 1px), radial-gradient(circle at 75% 75%, white 1px, transparent 1px)',
-            backgroundSize: '32px 32px, 24px 24px',
+          <div className="absolute inset-0 opacity-[0.05]" style={{
+            backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
           }} />
-          {/* Gold shimmer line */}
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent opacity-60" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-50" />
 
           <div className="relative px-8 py-10 text-center">
-            <p className="text-gold text-xs font-bold tracking-[0.2em] uppercase mb-3">🏆 Winner</p>
-            <div
-              className={`transition-all duration-700 delay-300 ${
-                revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
-            >
-              <h2 className="text-3xl font-bold mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20, color: '#D4AB5C' }}>emoji_events</span>
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: '#D4AB5C' }}>Winner</p>
+            </div>
+            <div className={`transition-all duration-700 delay-300 ${revealed ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+              <h2 className="type-headline-medium font-bold mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>
                 {winner.wine.name}
               </h2>
-              {winner.wine.producer && (
-                <p className="text-cream/70 text-sm mb-1">{winner.wine.producer}</p>
-              )}
+              {winner.wine.producer && <p className="type-body-medium" style={{ opacity: 0.7 }}>{winner.wine.producer}</p>}
               {(winner.wine.region || winner.wine.country) && (
-                <p className="text-cream/50 text-xs mb-4">
+                <p className="type-body-small mt-0.5" style={{ opacity: 0.5 }}>
                   {[winner.wine.region, winner.wine.country].filter(Boolean).join(', ')}
                 </p>
               )}
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <span className="text-4xl font-black text-gold" style={{ fontFamily: 'Playfair Display, serif' }}>
+              <div className="flex items-center justify-center gap-3 my-4">
+                <span className="type-display-small font-black" style={{ fontFamily: 'Playfair Display, serif', color: '#D4AB5C' }}>
                   {winner.totalPoints}
                 </span>
-                <span className="text-cream/50 text-sm">/ {maxPoints} pts</span>
+                <span className="type-body-small" style={{ opacity: 0.5 }}>/ {maxPoints} pts</span>
               </div>
-              {/* Who voted for it */}
               {event.rankings.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-1.5 mt-1">
-                  {event.rankings
-                    .filter(r => r.wineOrder[0] === winner.wineId)
-                    .map(r => {
-                      const m = members.find(x => x.id === r.memberId);
-                      return m ? (
-                        <span key={m.id} className="text-xs bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
-                          {m.name} voted #1
-                        </span>
-                      ) : null;
-                    })}
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {event.rankings.filter(r => r.wineOrder[0] === winner.wineId).map(r => {
+                    const m = members.find(x => x.id === r.memberId);
+                    return m ? (
+                      <span key={m.id} className="type-label-small" style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 12px', borderRadius: 'var(--shape-full)' }}>
+                        {m.name} voted #1
+                      </span>
+                    ) : null;
+                  })}
                 </div>
               )}
             </div>
@@ -154,7 +147,7 @@ export const ResultsPage: React.FC = () => {
       {/* ── PODIUM ── */}
       {showPodium && (
         <div className={`transition-all duration-500 ${showPodium ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <h2 className="font-bold text-burgundy mb-4 text-base" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <h2 className="type-title-medium mb-4" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
             Final Rankings
           </h2>
           <div className="space-y-2">
@@ -163,24 +156,30 @@ export const ResultsPage: React.FC = () => {
               return (
                 <div
                   key={result.wineId}
-                  className={`card p-4 flex items-center gap-3 fade-in`}
-                  style={{ animationDelay: `${i * 80}ms`, border: result.rank === 1 ? '2px solid var(--gold)' : undefined }}
+                  className="card-outlined p-4 flex items-center gap-3 fade-in"
+                  style={{
+                    animationDelay: `${i * 80}ms`,
+                    borderRadius: 'var(--shape-large)',
+                    borderColor: result.rank === 1 ? medal.color : undefined,
+                    borderWidth: result.rank === 1 ? 2 : undefined,
+                  }}
                 >
-                  <span className="text-2xl w-10 text-center flex-shrink-0">{medal.emoji}</span>
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: medal.bg }}
+                  >
+                    <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20, color: medal.fg }}>{medal.icon}</span>
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-burgundy text-sm truncate">{result.wine.name}</h3>
-                    {result.wine.grape && <p className="text-xs text-charcoal-muted">{result.wine.grape}</p>}
-                    {/* Progress bar */}
+                    <p className="type-title-small truncate" style={{ color: 'var(--md-on-surface)' }}>{result.wine.name}</p>
+                    {result.wine.grape && <p className="type-body-small" style={{ color: 'var(--md-on-surface-variant)' }}>{result.wine.grape}</p>}
                     <div className="taste-bar-track mt-2">
-                      <div
-                        className="taste-bar-fill"
-                        style={{ width: `${(result.totalPoints / maxPoints) * 100}%` }}
-                      />
+                      <div className="taste-bar-fill" style={{ width: `${(result.totalPoints / maxPoints) * 100}%`, background: medal.color }} />
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-lg font-bold text-burgundy">{result.totalPoints}</p>
-                    <p className="text-[10px] text-charcoal-muted">/{maxPoints} pts</p>
+                    <p className="type-title-large font-bold" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-primary)' }}>{result.totalPoints}</p>
+                    <p className="type-label-small" style={{ color: 'var(--md-outline)' }}>/{maxPoints} pts</p>
                   </div>
                 </div>
               );
@@ -189,48 +188,56 @@ export const ResultsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── INDIVIDUAL RANKINGS TABLE ── */}
+      {/* ── INDIVIDUAL RANKINGS ── */}
       {showPodium && (
         <div className="fade-in">
-          <h2 className="font-bold text-burgundy mb-4 text-base" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <h2 className="type-title-medium mb-4" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
             Individual Rankings
           </h2>
-          <div className="card overflow-hidden">
+          <div className="card-outlined overflow-hidden" style={{ borderRadius: 'var(--shape-large)' }}>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full type-body-small">
                 <thead>
-                  <tr className="bg-cream-dark">
-                    <th className="text-left p-3 text-burgundy font-semibold">Wine</th>
+                  <tr style={{ background: 'var(--md-surface-container-highest)' }}>
+                    <th className="text-left p-3 type-label-medium" style={{ color: 'var(--md-on-surface)' }}>Wine</th>
                     {members.map(m => (
-                      <th key={m.id} className="text-center p-3 text-burgundy font-semibold min-w-[56px]">
+                      <th key={m.id} className="text-center p-3 type-label-medium min-w-[56px]" style={{ color: 'var(--md-on-surface)' }}>
                         {m.name.split(' ')[0]}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {results.map(result => (
-                    <tr key={result.wineId} className="border-t border-cream-dark">
-                      <td className="p-3 font-medium text-burgundy text-xs">
-                        {getMedal(result.rank).emoji} {result.wine.name}
-                      </td>
-                      {members.map(member => {
-                        const ranking = event.rankings.find(r => r.memberId === member.id);
-                        const pos = ranking ? ranking.wineOrder.indexOf(result.wineId) + 1 : '-';
-                        return (
-                          <td key={member.id} className="text-center p-3">
-                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
-                              pos === 1 ? 'bg-gold/20 text-gold-dark' :
-                              pos === 2 ? 'bg-gray-200 text-charcoal' :
-                              'bg-cream text-charcoal-muted'
-                            }`}>
-                              {pos}
-                            </span>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
+                  {results.map(result => {
+                    const medal = getMedal(result.rank);
+                    return (
+                      <tr key={result.wineId} style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 16, color: medal.fg }}>{medal.icon}</span>
+                            <span className="type-body-small font-medium" style={{ color: 'var(--md-on-surface)' }}>{result.wine.name}</span>
+                          </div>
+                        </td>
+                        {members.map(member => {
+                          const ranking = event.rankings.find(r => r.memberId === member.id);
+                          const pos = ranking ? ranking.wineOrder.indexOf(result.wineId) + 1 : '-';
+                          return (
+                            <td key={member.id} className="text-center p-3">
+                              <span
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-full type-label-medium font-bold"
+                                style={{
+                                  background: pos === 1 ? 'var(--md-tertiary-container)' : pos === 2 ? 'var(--md-surface-container-highest)' : 'transparent',
+                                  color: pos === 1 ? 'var(--md-on-tertiary-container)' : 'var(--md-on-surface-variant)',
+                                }}
+                              >
+                                {pos}
+                              </span>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -241,41 +248,47 @@ export const ResultsPage: React.FC = () => {
       {/* ── TASTING NOTES ── */}
       {showPodium && event.rankings.some(r => r.notes && Object.keys(r.notes).length > 0) && (
         <div className="fade-in">
-          <h2 className="font-bold text-burgundy mb-4 text-base" style={{ fontFamily: 'Playfair Display, serif' }}>
-            📝 Tasting Notes
-          </h2>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-rounded" style={{ fontSize: 20, color: 'var(--md-primary)' }}>rate_review</span>
+            <h2 className="type-title-medium" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
+              Tasting Notes
+            </h2>
+          </div>
           <div className="space-y-3">
             {results.map(result => {
               const notesForWine = event.rankings
                 .filter(r => r.notes?.[result.wineId])
-                .map(r => ({
-                  member: members.find(m => m.id === r.memberId),
-                  note: r.notes![result.wineId],
-                }))
+                .map(r => ({ member: members.find(m => m.id === r.memberId), note: r.notes![result.wineId] }))
                 .filter(x => x.member);
-
               if (notesForWine.length === 0) return null;
+              const medal = getMedal(result.rank);
               return (
-                <div key={result.wineId} className="card p-4">
-                  <h3 className="font-semibold text-burgundy text-sm mb-3">
-                    {getMedal(result.rank).emoji} {result.wine.name}
-                  </h3>
+                <div key={result.wineId} className="card-outlined p-4" style={{ borderRadius: 'var(--shape-large)' }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="material-symbols-rounded ms-filled" style={{ fontSize: 16, color: medal.fg }}>{medal.icon}</span>
+                    <h3 className="type-title-small" style={{ color: 'var(--md-on-surface)' }}>{result.wine.name}</h3>
+                  </div>
                   <div className="space-y-3">
                     {notesForWine.map(({ member, note }) => (
-                      <div key={member!.id} className="bg-cream rounded-xl p-3">
+                      <div key={member!.id} className="p-3" style={{ background: 'var(--md-surface-container)', borderRadius: 'var(--shape-medium)' }}>
                         <div className="flex items-center gap-2 mb-2">
-                          <div className="w-6 h-6 rounded-full wine-gradient-red flex items-center justify-center text-cream text-xs font-bold">
+                          <div
+                            className="w-6 h-6 rounded-full flex items-center justify-center type-label-small font-bold"
+                            style={{ background: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
+                          >
                             {member!.name.charAt(0)}
                           </div>
-                          <span className="text-xs font-semibold text-charcoal">{member!.name}</span>
+                          <span className="type-label-medium" style={{ color: 'var(--md-on-surface)' }}>{member!.name}</span>
                           {note.rating > 0 && (
-                            <span className="text-xs text-gold ml-auto">{Array(note.rating).fill('★').join('')}</span>
+                            <span className="type-label-small ml-auto" style={{ color: 'var(--md-tertiary)' }}>
+                              {Array(note.rating).fill('★').join('')}
+                            </span>
                           )}
                         </div>
-                        <div className="space-y-1 text-xs text-charcoal-muted">
-                          {note.aroma && <p><span className="font-semibold text-charcoal">Aroma:</span> {note.aroma}</p>}
-                          {note.palate && <p><span className="font-semibold text-charcoal">Palate:</span> {note.palate}</p>}
-                          {note.finish && <p><span className="font-semibold text-charcoal">Finish:</span> {note.finish}</p>}
+                        <div className="space-y-1">
+                          {note.aroma && <p className="type-body-small" style={{ color: 'var(--md-on-surface-variant)' }}><span style={{ fontWeight: 500, color: 'var(--md-on-surface)' }}>Aroma:</span> {note.aroma}</p>}
+                          {note.palate && <p className="type-body-small" style={{ color: 'var(--md-on-surface-variant)' }}><span style={{ fontWeight: 500, color: 'var(--md-on-surface)' }}>Palate:</span> {note.palate}</p>}
+                          {note.finish && <p className="type-body-small" style={{ color: 'var(--md-on-surface-variant)' }}><span style={{ fontWeight: 500, color: 'var(--md-on-surface)' }}>Finish:</span> {note.finish}</p>}
                         </div>
                       </div>
                     ))}
@@ -287,14 +300,12 @@ export const ResultsPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── ACTIONS ── */}
+      {/* ── SPLIT EXPENSES CTA ── */}
       {showPodium && (
         <div className="fade-in">
-          <Link
-            to={`/events/${event.id}/expenses`}
-            className="btn-primary w-full text-base"
-          >
-            💰 Split Expenses
+          <Link to={`/events/${event.id}/expenses`} className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
+            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>payments</span>
+            Split Expenses
           </Link>
         </div>
       )}
