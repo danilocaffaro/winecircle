@@ -137,7 +137,7 @@ export const SearchPage: React.FC = () => {
   const showRecent = query.trim().length === 0 && recentSearches.length > 0;
 
   return (
-    <div className="space-y-5 max-w-4xl mx-auto pb-6" style={{ overflowX: 'hidden' }}>
+    <div className="space-y-5 max-w-4xl mx-auto pb-6">
 
       {/* ── Search bar with autocomplete ── */}
       <div className="relative">
@@ -342,12 +342,12 @@ export const SearchPage: React.FC = () => {
 
       {/* ── Empty state ── */}
       {!searching && results.length === 0 && (
-        <div className="text-center py-8 fade-in">
+        <div className="text-center py-8 fade-in" style={{ width: "100%" }}>
           <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
             style={{ background: 'var(--md-primary-container)', marginLeft: 'auto', marginRight: 'auto' }}>
             <span className="material-symbols-rounded ms-filled" style={{ fontSize: 40, color: 'var(--md-on-primary-container)' }}>wine_bar</span>
           </div>
-          <h3 className="type-title-large mb-1.5" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
+          <h3 className="type-title-large mb-1.5" style={{ fontFamily: "Playfair Display, serif", color: "var(--md-on-surface)", wordBreak: "break-word", overflowWrap: "break-word" }}>
             Discover Wines
           </h3>
           <p className="type-body-medium mb-7 max-w-xs mx-auto" style={{ color: 'var(--md-on-surface-variant)' }}>
@@ -356,7 +356,7 @@ export const SearchPage: React.FC = () => {
 
           {/* Popular searches */}
           <div className="space-y-3">
-            <p className="type-label-large" style={{ color: 'var(--md-on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Popular searches</p>
+            <p className="type-label-large" style={{ color: "var(--md-on-surface-variant)", textTransform: "uppercase", letterSpacing: "0.08em", wordBreak: "break-word" }}>Popular Searches</p>
             <div className="flex flex-wrap justify-center gap-2 px-2">
               {POPULAR.map(s => (
                 <button

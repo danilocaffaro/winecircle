@@ -97,16 +97,16 @@ export const Home: React.FC = () => {
           <div className="grid grid-cols-3 gap-3 fade-in fade-in-delay-1">
             {[
               { icon: 'group',         title: 'Clubs',         desc: 'Organize your community' },
-              { icon: 'mask',           title: 'Blind Tasting', desc: 'Fair & unbiased' },
+              { icon: 'masks',          title: 'Blind Tasting', desc: 'Fair & unbiased' },
               { icon: 'receipt_long',  title: 'Split Bills',   desc: 'Auto-calculated' },
             ].map(feat => (
               <div
                 key={feat.title}
                 className="card-elevated p-4 text-center"
-                style={{ borderRadius: 'var(--shape-large)' }}
+                style={{ borderRadius: 'var(--shape-large)', height: 130, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' }}
               >
                 <div
-                  className="w-10 h-10 mx-auto mb-3 rounded-2xl flex items-center justify-center"
+                  className="w-10 h-10 mx-auto mb-3 rounded-2xl flex items-center justify-center shrink-0"
                   style={{ background: 'var(--md-primary-container)' }}
                 >
                   <span
@@ -117,7 +117,7 @@ export const Home: React.FC = () => {
                   </span>
                 </div>
                 <p className="type-label-medium" style={{ color: 'var(--md-on-surface)' }}>{feat.title}</p>
-                <p className="type-body-small mt-1" style={{ color: 'var(--md-on-surface-variant)' }}>{feat.desc}</p>
+                <p className="type-body-small mt-1" style={{ color: 'var(--md-on-surface-variant)', lineHeight: 1.3 }}>{feat.desc}</p>
               </div>
             ))}
           </div>

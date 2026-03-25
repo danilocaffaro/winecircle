@@ -36,7 +36,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       <div className="flex flex-1">
         <DesktopSidebar />
 
-        <div className="flex-1 flex flex-col min-h-screen">
+        <div className="flex-1 flex flex-col min-h-screen min-w-0">
           {/* Desktop Header */}
           <header className="hidden md:block w-full bg-white border-b border-cream-dark sticky top-0 z-50">
             <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">

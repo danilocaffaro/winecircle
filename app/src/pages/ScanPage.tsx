@@ -53,8 +53,8 @@ export const ScanPage: React.FC = () => {
   return (
     <div className="space-y-5 max-w-lg mx-auto pb-6">
       <div>
-        <h1 className="text-2xl font-bold text-burgundy" style={{ fontFamily: 'Playfair Display, serif' }}>
-          📷 Scan Label
+        <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-primary)' }}>
+          Scan Label
         </h1>
         <p className="text-sm text-charcoal-muted mt-0.5">AI-powered wine label recognition</p>
       </div>
@@ -103,8 +103,11 @@ export const ScanPage: React.FC = () => {
                 <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-burgundy/50 rounded-bl-xl" />
                 <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-burgundy/50 rounded-br-xl" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-20 h-20 rounded-full bg-burgundy/8 flex items-center justify-center">
-                    <span className="text-4xl">📷</span>
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center"
+                    style={{ background: 'var(--md-primary-container)' }}
+                  >
+                    <span className="material-symbols-rounded ms-filled" style={{ fontSize: 32, color: 'var(--md-on-primary-container)' }}>photo_camera</span>
                   </div>
                 </div>
               </div>
@@ -116,11 +119,13 @@ export const ScanPage: React.FC = () => {
                 AI will identify the wine instantly.
               </p>
               <div className="flex flex-col gap-2 max-w-xs mx-auto">
-                <button className="btn-primary">
-                  📷 Take Photo
+                <button className="btn-primary inline-flex items-center gap-2 justify-center">
+                  <span className="material-symbols-rounded ms-20" style={{ fontSize: 20 }}>photo_camera</span>
+                  Take Photo
                 </button>
-                <button className="btn-ghost">
-                  🖼️ Upload from Gallery
+                <button className="btn-outlined inline-flex items-center gap-2 justify-center">
+                  <span className="material-symbols-rounded ms-20" style={{ fontSize: 20 }}>photo_library</span>
+                  Upload from Gallery
                 </button>
               </div>
             </div>
