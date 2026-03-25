@@ -333,7 +333,7 @@ export const ClubDetail: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-burgundy text-sm truncate">{event.name}</h3>
                       <p className="text-[11px] text-charcoal-light mt-0.5">
-                        {new Date(event.date).toLocaleDateString()} · {event.type === 'blind' ? '🙈 Blind' : '👀 Open'} · {event.wines.length} wines
+                        {new Date(event.date).toLocaleDateString('pt-BR')} · {event.type === 'blind' ? '🙈 Blind' : '👀 Open'} · {event.wines.length} wines
                       </p>
                     </div>
                     <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full shrink-0 ${

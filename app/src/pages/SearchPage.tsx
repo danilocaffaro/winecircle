@@ -47,9 +47,11 @@ export const SearchPage: React.FC = () => {
   const fetchSuggestions = useCallback(async (q: string) => {
     if (q.trim().length < 2) { setSuggestions([]); return; }
     setLoadingSuggestions(true);
+    setShowDropdown(true); // garantir que dropdown abre enquanto carrega
     try {
       const res = await getWineSuggestions(q.trim());
       setSuggestions(res.slice(0, 5));
+      setShowDropdown(true); // manter aberto quando resultado chega
     } catch { setSuggestions([]); }
     finally { setLoadingSuggestions(false); }
   }, []);
@@ -173,7 +175,7 @@ export const SearchPage: React.FC = () => {
         </div>
 
         {/* ── Autocomplete dropdown ── */}
-        {showDropdown && (dropdownItems.length > 0 || showRecent || loadingSuggestions) && (
+        {showDropdown && (dropdownItems.length > 0 || showRecent || (loadingSuggestions && query.trim().length >= 2)) && (
           <div ref={dropdownRef} className="search-dropdown">
 
             {/* Loading state */}

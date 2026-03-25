@@ -272,13 +272,15 @@ export const TastingPage: React.FC = () => {
             </div>
           )}
 
-          {/* Submit button */}
-          <button
-            onClick={submitRanking}
-            className="btn-primary w-full mt-2"
-          >
-            ✓ Submit {currentMember.name}'s Tasting
-          </button>
+          {/* Submit button — sticky no bottom */}
+          <div className="sticky bottom-0 pt-3 pb-1 bg-cream" style={{ marginLeft: '-1px', marginRight: '-1px' }}>
+            <button
+              onClick={submitRanking}
+              className="btn-primary w-full"
+            >
+              ✓ Submit {currentMember.name}'s Tasting
+            </button>
+          </div>
         </div>
       )}
 

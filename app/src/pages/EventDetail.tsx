@@ -45,7 +45,7 @@ export const EventDetail: React.FC = () => {
               {event.name}
             </h1>
             <p className="text-sm text-charcoal-light mt-1">
-              {new Date(event.date).toLocaleDateString()} · {event.type === 'blind' ? '🙈 Blind' : '👀 Open'}
+              {new Date(event.date).toLocaleDateString('pt-BR')} · {event.type === 'blind' ? '🙈 Blind' : '👀 Open'}
             </p>
           </div>
           <span className={`text-[11px] font-semibold px-3 py-1.5 rounded-full shrink-0 ${

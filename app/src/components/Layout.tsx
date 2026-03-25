@@ -51,7 +51,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 py-5 pb-28 md:pb-8 safe-area-x">
+        <main className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 py-5 pb-28 md:pb-8 safe-area-x" style={{ isolation: 'isolate' }}>
           {children}
         </main>
       </div>

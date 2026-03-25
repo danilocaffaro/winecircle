@@ -152,7 +152,7 @@ export const ResultsPage: React.FC = () => {
       )}
 
       {/* ── PODIUM ── */}
-      {showPodium && results.length > 1 && (
+      {showPodium && (
         <div className={`transition-all duration-500 ${showPodium ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <h2 className="font-bold text-burgundy mb-4 text-base" style={{ fontFamily: 'Playfair Display, serif' }}>
             Final Rankings
