@@ -53,6 +53,8 @@ export const Home: React.FC = () => {
                   style={{
                     borderRadius: 'var(--shape-full)',
                     background: 'rgba(255,218,223,0.12)',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
                   }}
                 >
                   <span

@@ -343,8 +343,8 @@ export const SearchPage: React.FC = () => {
       {/* ── Empty state ── */}
       {!searching && results.length === 0 && (
         <div className="text-center py-8 fade-in">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
-            style={{ background: 'var(--md-primary-container)' }}>
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
+            style={{ background: 'var(--md-primary-container)', marginLeft: 'auto', marginRight: 'auto' }}>
             <span className="material-symbols-rounded ms-filled" style={{ fontSize: 40, color: 'var(--md-on-primary-container)' }}>wine_bar</span>
           </div>
           <h3 className="type-title-large mb-1.5" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>

@@ -25,8 +25,8 @@ export const ProfilePage: React.FC = () => {
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Profile header */}
       <div className="text-center pt-6">
-        <div className="w-20 h-20 mx-auto rounded-full flex items-center justify-center shadow-lg mb-3"
-          style={{ background: 'linear-gradient(135deg, var(--md-primary) 0%, #5A1F29 100%)' }}>
+        <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg mb-3"
+          style={{ background: 'linear-gradient(135deg, var(--md-primary) 0%, #5A1F29 100%)', marginLeft: 'auto', marginRight: 'auto' }}>
           <span className="material-symbols-rounded ms-filled" style={{ fontSize: 36, color: 'white' }}>wine_bar</span>
         </div>
         <h1 className="type-title-large" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
