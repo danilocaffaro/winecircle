@@ -52,13 +52,16 @@ export const ResultsPage: React.FC = () => {
         Back to event
       </Link>
 
-      <div className="flex items-center gap-2">
-        <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-tertiary)' }}>emoji_events</span>
-        <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
-          Results
-        </h1>
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-tertiary)' }}>emoji_events</span>
+          <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
+            Results
+          </h1>
+        </div>
+        <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{event.name}</p>
       </div>
-      <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)', marginTop: -16 }}>{event.name}</p>
 
       {/* ── REVEAL SCREEN ── */}
       {revealStep === 1 && !revealed && (
@@ -156,12 +159,13 @@ export const ResultsPage: React.FC = () => {
               return (
                 <div
                   key={result.wineId}
-                  className="card-outlined p-4 flex items-center gap-3 fade-in"
+                  className="card-outlined flex items-center gap-3 fade-in"
                   style={{
                     animationDelay: `${i * 80}ms`,
                     borderRadius: 'var(--shape-large)',
                     borderColor: result.rank === 1 ? medal.color : undefined,
                     borderWidth: result.rank === 1 ? 2 : undefined,
+                    padding: '16px 20px 16px 16px',
                   }}
                 >
                   <div
