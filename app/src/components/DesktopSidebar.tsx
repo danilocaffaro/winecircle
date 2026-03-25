@@ -2,51 +2,93 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 const sidebarItems = [
-  { to: '/', label: 'Home', icon: '🏠' },
-  { to: '/search', label: 'Discover', icon: '🔍' },
-  { to: '/scan', label: 'Scan Wine', icon: '📷' },
-  { to: '/wines', label: 'My Wines', icon: '🍷' },
-  { to: '/clubs', label: 'My Clubs', icon: '👥' },
-  { to: '/profile', label: 'Profile', icon: '👤' },
+  { to: '/',        label: 'Home',     icon: 'home' },
+  { to: '/search',  label: 'Discover', icon: 'search' },
+  { to: '/scan',    label: 'Scan Wine',icon: 'barcode_scanner' },
+  { to: '/wines',   label: 'My Wines', icon: 'wine_bar' },
+  { to: '/clubs',   label: 'My Clubs', icon: 'group' },
+  { to: '/profile', label: 'Profile',  icon: 'person' },
 ];
 
 export const DesktopSidebar: React.FC = () => {
   const location = useLocation();
-
-  const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
-    return location.pathname.startsWith(path);
-  };
+  const isActive = (path: string) =>
+    path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
   return (
-    <aside className="hidden md:flex flex-col w-60 lg:w-64 bg-white border-r border-cream-dark min-h-screen sticky top-0 shrink-0">
+    <aside
+      className="hidden md:flex flex-col w-60 lg:w-64 min-h-screen sticky top-0 shrink-0"
+      style={{
+        background: 'var(--md-surface-container-low)',
+        borderRight: '1px solid var(--md-outline-variant)',
+      }}
+    >
       {/* Logo */}
-      <div className="p-5 pb-4 border-b border-cream-dark">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl wine-gradient-red flex items-center justify-center shadow-sm">
-            <span className="text-white text-sm font-bold">W</span>
+      <div className="px-4 py-5 pb-4">
+        <Link to="/" className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-2xl flex items-center justify-center"
+            style={{ background: 'var(--md-primary)' }}
+          >
+            <span
+              className="material-symbols-rounded ms-filled"
+              style={{ fontSize: 20, color: 'var(--md-on-primary)' }}
+            >
+              wine_bar
+            </span>
           </div>
-          <h1 className="text-xl font-bold text-burgundy tracking-tight" style={{ fontFamily: 'Playfair Display, serif' }}>
+          <h1
+            className="text-xl font-semibold"
+            style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}
+          >
             Wine Circle
           </h1>
         </Link>
       </div>
 
-      {/* Nav items */}
-      <nav className="flex-1 p-3 space-y-1">
+      {/* Nav items — MD3 Navigation Drawer style */}
+      <nav className="flex-1 px-3 py-2 space-y-1">
         {sidebarItems.map(item => {
           const active = isActive(item.to);
           return (
             <Link
               key={item.to}
               to={item.to}
-              className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                active
-                  ? 'bg-burgundy/5 text-burgundy font-semibold border-l-[3px] border-burgundy pl-3.5'
-                  : 'text-charcoal-light hover:bg-cream hover:text-charcoal border-l-[3px] border-transparent pl-3.5'
-              }`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '0 16px',
+                height: 56,
+                borderRadius: 'var(--shape-full)',
+                background: active ? 'var(--md-secondary-container)' : 'transparent',
+                color: active ? 'var(--md-on-secondary-container)' : 'var(--md-on-surface-variant)',
+                fontWeight: active ? 700 : 500,
+                fontSize: 14,
+                letterSpacing: '0.1px',
+                textDecoration: 'none',
+                transition: 'background var(--motion-duration-short2)',
+              }}
+              onMouseEnter={e => {
+                if (!active) (e.currentTarget as HTMLElement).style.background =
+                  'color-mix(in srgb, var(--md-on-surface-variant) 8%, transparent)';
+              }}
+              onMouseLeave={e => {
+                if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent';
+              }}
             >
-              <span className="text-lg w-6 text-center">{item.icon}</span>
+              <span
+                className="material-symbols-rounded"
+                style={{
+                  fontSize: 24,
+                  fontVariationSettings: active
+                    ? "'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24"
+                    : "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24",
+                  flexShrink: 0,
+                }}
+              >
+                {item.icon}
+              </span>
               <span>{item.label}</span>
             </Link>
           );
@@ -54,14 +96,22 @@ export const DesktopSidebar: React.FC = () => {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-cream-dark">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-burgundy to-burgundy-dark flex items-center justify-center">
-            <span className="text-sm text-cream">🍷</span>
+      <div className="p-4" style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
+        <div className="flex items-center gap-3">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: 'var(--md-primary-container)' }}
+          >
+            <span
+              className="material-symbols-rounded ms-filled"
+              style={{ fontSize: 16, color: 'var(--md-on-primary-container)' }}
+            >
+              person
+            </span>
           </div>
           <div>
-            <p className="text-xs font-medium text-charcoal">Wine Enthusiast</p>
-            <p className="text-[10px] text-charcoal-light">Wine Circle v10.1</p>
+            <p className="text-xs font-medium" style={{ color: 'var(--md-on-surface)' }}>Wine Enthusiast</p>
+            <p className="text-[10px]" style={{ color: 'var(--md-on-surface-variant)' }}>Wine Circle v10.1</p>
           </div>
         </div>
       </div>

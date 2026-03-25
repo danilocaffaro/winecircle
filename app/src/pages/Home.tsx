@@ -5,7 +5,7 @@ import { getClubs, getEvents } from '../services/storage';
 export const Home: React.FC = () => {
   const clubs = getClubs();
   const events = getEvents();
-  const recentEvents = events
+  const recentEvents = [...events]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
@@ -14,222 +14,258 @@ export const Home: React.FC = () => {
   const totalWines = events.reduce((sum, e) => sum + e.wines.length, 0);
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Greeting */}
-      <div className="pt-2">
-        <p className="text-charcoal-light text-sm">Welcome back</p>
-        <h1 className="text-[26px] font-bold text-burgundy" style={{ fontFamily: 'Playfair Display, serif' }}>
+    <div className="space-y-6 max-w-4xl mx-auto pb-4">
+
+      {/* ── Greeting ── */}
+      <div className="pt-2 fade-in">
+        <p
+          className="type-label-large"
+          style={{ color: 'var(--md-on-surface-variant)' }}
+        >
+          Welcome back
+        </p>
+        <h1
+          className="type-headline-large"
+          style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-primary)' }}
+        >
           Wine Circle
         </h1>
       </div>
 
       {isEmpty ? (
-        /* ─── Empty State ─── */
-        <div className="space-y-6">
+
+        /* ══ Empty State ══ */
+        <div className="space-y-5">
+
           {/* Hero card */}
-          <div className="relative overflow-hidden rounded-2xl shadow-xl">
-            <div className="wine-gradient-red px-8 pt-8 pb-12 sm:px-10 sm:pt-10 sm:pb-14 text-center">
-              <div className="absolute inset-0 opacity-[0.06]" style={{
-                backgroundImage: 'radial-gradient(circle at 30% 20%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)',
-                backgroundSize: '24px 24px, 32px 32px'
+          <div
+            className="relative overflow-hidden fade-in"
+            style={{ borderRadius: 'var(--shape-extra-large)' }}
+          >
+            <div className="wine-gradient-dark px-8 pt-10 pb-14 text-center">
+              <div className="absolute inset-0 opacity-[0.04]" style={{
+                backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
+                backgroundSize: '24px 24px',
               }} />
               <div className="relative">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                  <span className="text-5xl">🥂</span>
+                <div
+                  className="w-20 h-20 mx-auto mb-5 flex items-center justify-center"
+                  style={{
+                    borderRadius: 'var(--shape-full)',
+                    background: 'rgba(255,218,223,0.12)',
+                  }}
+                >
+                  <span
+                    className="material-symbols-rounded ms-filled"
+                    style={{ fontSize: 44, color: 'var(--md-primary-container)' }}
+                  >
+                    wine_bar
+                  </span>
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
+                <h2
+                  className="type-headline-small text-white mb-3"
+                  style={{ fontFamily: 'Playfair Display, serif' }}
+                >
                   Your Wine Journey Starts Here
                 </h2>
-                <p className="text-white/70 text-sm mb-5 max-w-sm mx-auto">
+                <p
+                  className="type-body-medium mb-6 max-w-xs mx-auto"
+                  style={{ color: 'rgba(255,255,255,0.65)' }}
+                >
                   Create a wine club, host blind tastings with friends, and discover amazing wines together.
                 </p>
                 <Link
                   to="/clubs/new"
-                  className="bg-white text-burgundy px-8 py-3.5 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all min-h-[48px] inline-flex items-center justify-center"
+                  className="btn-primary inline-flex"
+                  style={{ background: 'var(--md-primary-container)', color: 'var(--md-on-primary-container)', fontWeight: 600, paddingLeft: 32, paddingRight: 32, height: 48 }}
                 >
+                  <span className="material-symbols-rounded ms-20">add</span>
                   Create Your First Club
                 </Link>
               </div>
             </div>
           </div>
 
-          {/* Features — responsive 3-col */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Feature cards */}
+          <div className="grid grid-cols-3 gap-3 fade-in fade-in-delay-1">
             {[
-              { icon: '🏛️', title: 'Clubs', desc: 'Organize your community' },
-              { icon: '🙈', title: 'Blind Tasting', desc: 'Fair & unbiased' },
-              { icon: '💰', title: 'Split Bills', desc: 'Auto-calculated' },
+              { icon: 'group',         title: 'Clubs',         desc: 'Organize your community' },
+              { icon: 'visibility_off',title: 'Blind Tasting', desc: 'Fair & unbiased' },
+              { icon: 'receipt_long',  title: 'Split Bills',   desc: 'Auto-calculated' },
             ].map(feat => (
-              <div key={feat.title} className="bg-white rounded-2xl p-4 sm:p-5 border border-cream-dark text-center shadow-sm">
-                <span className="text-2xl block mb-2">{feat.icon}</span>
-                <h3 className="text-sm font-semibold text-burgundy">{feat.title}</h3>
-                <p className="text-xs text-charcoal-light mt-1">{feat.desc}</p>
+              <div
+                key={feat.title}
+                className="card-elevated p-4 text-center"
+                style={{ borderRadius: 'var(--shape-large)' }}
+              >
+                <div
+                  className="w-10 h-10 mx-auto mb-3 rounded-2xl flex items-center justify-center"
+                  style={{ background: 'var(--md-primary-container)' }}
+                >
+                  <span
+                    className="material-symbols-rounded ms-filled"
+                    style={{ fontSize: 20, color: 'var(--md-on-primary-container)' }}
+                  >
+                    {feat.icon}
+                  </span>
+                </div>
+                <p className="type-label-medium" style={{ color: 'var(--md-on-surface)' }}>{feat.title}</p>
+                <p className="type-body-small mt-1" style={{ color: 'var(--md-on-surface-variant)' }}>{feat.desc}</p>
               </div>
             ))}
           </div>
 
           {/* How it works */}
-          <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-charcoal-light uppercase tracking-wider">How it works</h2>
-            {[
-              { step: '1', emoji: '✨', text: 'Create a club and invite friends' },
-              { step: '2', emoji: '🍷', text: 'Add wines and start a blind tasting' },
-              { step: '3', emoji: '🏆', text: 'Rank wines and reveal the winner!' },
-            ].map(item => (
-              <div key={item.step} className="flex items-center gap-3 bg-white rounded-2xl p-4 shadow-sm border border-cream-dark">
-                <div className="w-10 h-10 rounded-full bg-burgundy text-cream flex items-center justify-center text-sm font-bold shrink-0">
-                  {item.step}
-                </div>
-                <p className="text-sm text-charcoal">
-                  <span className="mr-1">{item.emoji}</span>{item.text}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {/* Discover Wines Preview */}
-          <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-charcoal-light uppercase tracking-wider">Discover Wines</h2>
-            {/* Filter Chips */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {['All', 'Red', 'White', 'Rosé', 'Sparkling'].map((type, i) => (
-                <span
-                  key={type}
-                  className={`px-4 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-all min-h-[44px] flex items-center ${
-                    i === 0
-                      ? 'bg-burgundy text-cream border-burgundy'
-                      : 'bg-white text-charcoal-light border-cream-dark'
-                  }`}
+          <div className="fade-in fade-in-delay-2">
+            <p className="section-label mb-3">How it works</p>
+            <div className="space-y-2">
+              {[
+                { step: '1', icon: 'group_add',  text: 'Create a club and invite friends' },
+                { step: '2', icon: 'wine_bar',   text: 'Add wines and start a blind tasting' },
+                { step: '3', icon: 'emoji_events', text: 'Rank wines and reveal the winner!' },
+              ].map(item => (
+                <div
+                  key={item.step}
+                  className="card-elevated flex items-center gap-4 p-4"
+                  style={{ borderRadius: 'var(--shape-large)' }}
                 >
-                  {type}
-                </span>
-              ))}
-            </div>
-            {/* Sample Wine Cards — responsive grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              { name: 'Château Margaux 2018', type: 'Red', region: 'Bordeaux, France', grape: 'Cabernet Sauvignon', rating: 4.6, ratingCount: 2840, price: 'R$ 1.250', body: 85, sweetness: 15, tannin: 78, color: '#722F37' },
-              { name: 'Cloudy Bay 2023', type: 'White', region: 'Marlborough, NZ', grape: 'Sauvignon Blanc', rating: 4.2, ratingCount: 1560, price: 'R$ 189', body: 30, sweetness: 25, tannin: 10, color: '#C5A84F' },
-            ].map((wine, i) => (
-              <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-cream-dark flex gap-4">
-                {/* Bottle silhouette */}
-                <div className="w-16 h-24 sm:w-20 sm:h-28 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${wine.color}15` }}>
-                  <svg width="28" height="60" viewBox="0 0 28 60" fill={wine.color} opacity="0.5">
-                    <path d="M11 0h6v12c3 2 6 6 6 14v26c0 4-3 8-9 8s-9-4-9-8V26c0-8 3-12 6-14V0z"/>
-                  </svg>
-                </div>
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="font-semibold text-burgundy text-sm sm:text-base truncate">{wine.name}</h3>
-                      <p className="text-[11px] text-charcoal-light mt-1">{wine.region} · {wine.grape}</p>
-                    </div>
-                    {/* Rating badge — 44px touch target */}
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 border-2" style={{
-                      borderColor: wine.rating >= 4.0 ? '#22c55e' : wine.rating >= 3.0 ? '#eab308' : '#ef4444',
-                      background: wine.rating >= 4.0 ? '#22c55e10' : wine.rating >= 3.0 ? '#eab30810' : '#ef444410',
-                    }}>
-                      <span className="text-xs font-bold" style={{ color: wine.rating >= 4.0 ? '#22c55e' : wine.rating >= 3.0 ? '#eab308' : '#ef4444' }}>
-                        {wine.rating}
-                      </span>
-                    </div>
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: 'var(--md-primary)', color: 'var(--md-on-primary)' }}
+                  >
+                    <span className="type-label-large font-bold">{item.step}</span>
                   </div>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full" style={{ background: `${wine.color}15`, color: wine.color }}>
-                      {wine.type}
+                  <div className="flex items-center gap-3 flex-1">
+                    <span
+                      className="material-symbols-rounded"
+                      style={{ fontSize: 20, color: 'var(--md-on-surface-variant)' }}
+                    >
+                      {item.icon}
                     </span>
-                    <span className="text-xs font-bold text-burgundy">{wine.price}</span>
-                    <span className="text-[10px] text-charcoal-light">({wine.ratingCount.toLocaleString()})</span>
-                  </div>
-                  {/* Taste profile bars — h-2.5 Vivino-style */}
-                  <div className="mt-4 space-y-2.5">
-                    {[
-                      { label: 'Body', value: wine.body, left: 'Light', right: 'Bold' },
-                      { label: 'Sweetness', value: wine.sweetness, left: 'Dry', right: 'Sweet' },
-                      { label: 'Tannin', value: wine.tannin, left: 'Smooth', right: 'Tannic' },
-                    ].map(bar => (
-                      <div key={bar.label}>
-                        <div className="flex justify-between mb-0.5">
-                          <span className="text-[11px] font-medium text-charcoal-light">{bar.left}</span>
-                          <span className="text-[11px] font-medium text-charcoal-light">{bar.right}</span>
-                        </div>
-                        <div className="h-2.5 bg-cream-dark rounded-full overflow-hidden">
-                          <div className="h-full rounded-full transition-all" style={{ width: `${bar.value}%`, background: wine.color }} />
-                        </div>
-                      </div>
-                    ))}
+                    <p className="type-body-medium" style={{ color: 'var(--md-on-surface)' }}>{item.text}</p>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
             </div>
           </div>
         </div>
+
       ) : (
-        /* ─── Active State ─── */
+
+        /* ══ Active State ══ */
         <div className="space-y-6">
-          {/* Quick actions — responsive */}
-          <div className="grid grid-cols-2 gap-3">
+
+          {/* Quick actions */}
+          <div className="grid grid-cols-2 gap-3 fade-in">
             <Link
               to="/clubs/new"
-              className="bg-burgundy text-cream rounded-2xl p-5 hover:bg-burgundy-light active:bg-burgundy-dark transition-all shadow-md min-h-[88px]"
+              className="flex flex-col gap-2 p-5 min-h-[88px]"
+              style={{
+                background: 'var(--md-primary)',
+                color: 'var(--md-on-primary)',
+                borderRadius: 'var(--shape-extra-large)',
+                textDecoration: 'none',
+              }}
             >
-              <span className="text-xl block mb-1.5">✨</span>
-              <span className="text-sm font-semibold">New Club</span>
-              <p className="text-[11px] text-cream/60 mt-0.5">Start a tasting group</p>
+              <span className="material-symbols-rounded ms-filled" style={{ fontSize: 28 }}>add_circle</span>
+              <div>
+                <p className="type-title-small">New Club</p>
+                <p className="type-body-small" style={{ opacity: 0.7 }}>Start a tasting group</p>
+              </div>
             </Link>
             <Link
               to="/search"
-              className="bg-white text-charcoal border border-cream-dark rounded-2xl p-5 hover:border-burgundy/30 transition-all shadow-sm min-h-[88px]"
+              className="flex flex-col gap-2 p-5 min-h-[88px] card-elevated"
+              style={{
+                borderRadius: 'var(--shape-extra-large)',
+                textDecoration: 'none',
+                border: '1px solid var(--md-outline-variant)',
+              }}
             >
-              <span className="text-xl block mb-1.5">🔍</span>
-              <span className="text-sm font-semibold text-burgundy">Search Wines</span>
-              <p className="text-[11px] text-charcoal-light mt-0.5">AI-powered discovery</p>
+              <span
+                className="material-symbols-rounded"
+                style={{ fontSize: 28, color: 'var(--md-primary)' }}
+              >
+                search
+              </span>
+              <div>
+                <p className="type-title-small" style={{ color: 'var(--md-primary)' }}>Search Wines</p>
+                <p className="type-body-small" style={{ color: 'var(--md-on-surface-variant)' }}>AI-powered discovery</p>
+              </div>
             </Link>
           </div>
 
-          {/* Stats strip — responsive */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 fade-in fade-in-delay-1">
             {[
-              { label: 'Clubs', value: clubs.length, icon: '👥' },
-              { label: 'Events', value: events.length, icon: '📅' },
-              { label: 'Completed', value: completedCount, icon: '✅' },
-              { label: 'Wines', value: totalWines, icon: '🍷' },
+              { label: 'Clubs',     value: clubs.length,    icon: 'group' },
+              { label: 'Events',    value: events.length,   icon: 'event' },
+              { label: 'Completed', value: completedCount,  icon: 'check_circle' },
+              { label: 'Wines',     value: totalWines,      icon: 'wine_bar' },
             ].map(stat => (
-              <div key={stat.label} className="bg-white rounded-2xl p-4 text-center shadow-sm border border-cream-dark">
-                <span className="text-sm">{stat.icon}</span>
-                <p className="text-xl font-bold text-burgundy leading-tight mt-1" style={{ fontFamily: 'Playfair Display, serif' }}>
+              <div
+                key={stat.label}
+                className="card-filled p-4 text-center"
+                style={{ borderRadius: 'var(--shape-large)' }}
+              >
+                <span
+                  className="material-symbols-rounded ms-filled"
+                  style={{ fontSize: 20, color: 'var(--md-primary)' }}
+                >
+                  {stat.icon}
+                </span>
+                <p
+                  className="type-display-small font-bold mt-1"
+                  style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-primary)' }}
+                >
                   {stat.value}
                 </p>
-                <p className="text-[11px] text-charcoal-light mt-0.5">{stat.label}</p>
+                <p className="type-label-small mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>
+                  {stat.label}
+                </p>
               </div>
             ))}
           </div>
 
           {/* My Clubs */}
           {clubs.length > 0 && (
-            <div>
+            <div className="fade-in fade-in-delay-2">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-base font-semibold text-burgundy" style={{ fontFamily: 'Playfair Display, serif' }}>
+                <p
+                  className="type-title-medium"
+                  style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}
+                >
                   My Clubs
-                </h2>
-                <Link to="/clubs" className="text-xs font-medium text-gold-dark hover:text-gold min-h-[44px] flex items-center">
-                  See all →
+                </p>
+                <Link to="/clubs" className="btn-text" style={{ height: 36, padding: '0 12px' }}>
+                  See all
                 </Link>
               </div>
-              <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+              <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
                 {clubs.slice(0, 4).map(club => (
                   <Link
                     key={club.id}
                     to={`/clubs/${club.id}`}
-                    className="min-w-[150px] bg-white rounded-2xl p-4 shadow-sm border border-cream-dark hover:shadow-md transition-all"
+                    className="card-outlined flex-shrink-0 w-40 p-4"
+                    style={{ borderRadius: 'var(--shape-large)', textDecoration: 'none' }}
                   >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-burgundy/15 to-gold/10 flex items-center justify-center mb-2">
-                      <span className="text-lg">🏛️</span>
+                    <div
+                      className="w-10 h-10 rounded-2xl flex items-center justify-center mb-3"
+                      style={{ background: 'var(--md-primary-container)' }}
+                    >
+                      <span
+                        className="material-symbols-rounded ms-filled"
+                        style={{ fontSize: 20, color: 'var(--md-on-primary-container)' }}
+                      >
+                        group
+                      </span>
                     </div>
-                    <h3 className="font-semibold text-burgundy text-sm truncate">{club.name}</h3>
-                    <p className="text-[11px] text-charcoal-light mt-0.5">{club.members.length} members</p>
+                    <p className="type-title-small truncate" style={{ color: 'var(--md-on-surface)' }}>
+                      {club.name}
+                    </p>
+                    <p className="type-body-small mt-1" style={{ color: 'var(--md-on-surface-variant)' }}>
+                      {club.members.length} members
+                    </p>
                   </Link>
                 ))}
               </div>
@@ -238,42 +274,63 @@ export const Home: React.FC = () => {
 
           {/* Recent Events */}
           {recentEvents.length > 0 && (
-            <div>
-              <h2 className="text-base font-semibold text-burgundy mb-3" style={{ fontFamily: 'Playfair Display, serif' }}>
+            <div className="fade-in fade-in-delay-3">
+              <p
+                className="type-title-medium mb-3"
+                style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}
+              >
                 Recent Events
-              </h2>
-              <div className="space-y-3">
-                {recentEvents.map(event => (
-                  <Link
-                    key={event.id}
-                    to={`/events/${event.id}`}
-                    className="block bg-white rounded-2xl overflow-hidden shadow-sm border border-cream-dark hover:shadow-md transition-all"
-                  >
-                    <div className="p-4 flex items-center gap-3">
-                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-                        event.status === 'completed' ? 'bg-green-50' :
-                        event.status === 'tasting' ? 'bg-gold/10' : 'bg-cream'
-                      }`}>
-                        <span className="text-lg">
-                          {event.status === 'completed' ? '🏆' : event.status === 'tasting' ? '🍷' : '📋'}
+              </p>
+              <div className="space-y-2">
+                {recentEvents.map(event => {
+                  const statusIcon =
+                    event.status === 'completed' ? 'emoji_events' :
+                    event.status === 'tasting'   ? 'wine_bar' : 'event_note';
+                  const statusColor =
+                    event.status === 'completed' ? 'var(--md-tertiary)' :
+                    event.status === 'tasting'   ? 'var(--md-secondary)' :
+                    'var(--md-on-surface-variant)';
+                  return (
+                    <Link
+                      key={event.id}
+                      to={`/events/${event.id}`}
+                      className="card-outlined flex items-center gap-4 p-4"
+                      style={{ borderRadius: 'var(--shape-large)', textDecoration: 'none' }}
+                    >
+                      <div
+                        className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+                        style={{ background: `color-mix(in srgb, ${statusColor} 12%, transparent)` }}
+                      >
+                        <span
+                          className="material-symbols-rounded ms-filled"
+                          style={{ fontSize: 20, color: statusColor }}
+                        >
+                          {statusIcon}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-burgundy text-sm truncate">{event.name}</h3>
-                        <p className="text-[11px] text-charcoal-light mt-0.5">
-                          {new Date(event.date).toLocaleDateString('pt-BR')} · {event.wines.length} wines · {event.type === 'blind' ? '🙈 Blind' : '👀 Open'}
+                        <p className="type-title-small truncate" style={{ color: 'var(--md-on-surface)' }}>
+                          {event.name}
+                        </p>
+                        <p className="type-body-small mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>
+                          {new Date(event.date).toLocaleDateString('pt-BR')} · {event.wines.length} wines
                         </p>
                       </div>
-                      <span className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-full shrink-0 ${
-                        event.status === 'completed' ? 'bg-green-50 text-green-700' :
-                        event.status === 'tasting' ? 'bg-gold/15 text-gold-dark' :
-                        'bg-cream-dark text-charcoal-light'
-                      }`}>
+                      <span
+                        className="chip chip-selected type-label-small shrink-0"
+                        style={{
+                          height: 24,
+                          padding: '0 10px',
+                          background: `color-mix(in srgb, ${statusColor} 15%, transparent)`,
+                          borderColor: 'transparent',
+                          color: statusColor,
+                        }}
+                      >
                         {event.status}
                       </span>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           )}

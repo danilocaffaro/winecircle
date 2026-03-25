@@ -15,13 +15,13 @@ function addRecent(q: string) {
   localStorage.setItem(RECENT_KEY, JSON.stringify(list));
 }
 
-const filterChips: { label: string; value: WineType | 'all'; color: string }[] = [
-  { label: 'All',       value: 'all',       color: '' },
-  { label: '🔴 Red',    value: 'red',       color: 'chip-red' },
-  { label: '⚪ White',  value: 'white',     color: 'chip-white' },
-  { label: '🌸 Rosé',   value: 'rosé',      color: 'chip-rose' },
-  { label: '✨ Sparkling', value: 'sparkling', color: 'chip-sparkling' },
-  { label: '🍯 Dessert', value: 'dessert',  color: 'chip-dessert' },
+const filterChips: { label: string; value: WineType | 'all'; icon: string }[] = [
+  { label: 'All',       value: 'all',       icon: 'apps' },
+  { label: 'Red',       value: 'red',       icon: 'water_drop' },
+  { label: 'White',     value: 'white',     icon: 'light_mode' },
+  { label: 'Rosé',      value: 'rosé',      icon: 'local_florist' },
+  { label: 'Sparkling', value: 'sparkling', icon: 'bubble_chart' },
+  { label: 'Dessert',   value: 'dessert',   icon: 'cake' },
 ];
 
 const POPULAR = ['Château Margaux', 'Opus One', 'Tignanello', 'Barolo DOCG', 'Malbec Mendoza', 'Dom Pérignon'];
@@ -145,12 +145,8 @@ export const SearchPage: React.FC = () => {
           {/* Icon */}
           <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
             {searching
-              ? <div className="w-5 h-5 border-2 border-burgundy/30 border-t-burgundy rounded-full animate-spin" />
-              : (
-                <svg className="w-5 h-5 text-charcoal-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                </svg>
-              )
+              ? <div className="w-5 h-5 border-2 border-t-2 rounded-full animate-spin" style={{ borderColor: 'var(--md-outline-variant)', borderTopColor: 'var(--md-primary)' }} />
+              : <span className="material-symbols-rounded" style={{ fontSize: 24, color: 'var(--md-on-surface-variant)' }}>search</span>
             }
           </div>
 
@@ -164,19 +160,31 @@ export const SearchPage: React.FC = () => {
             placeholder="Search wines, regions, grapes..."
             autoComplete="off"
             spellCheck={false}
-            className="w-full pl-12 pr-14 py-3.5 rounded-2xl border-2 border-cream-dark bg-white text-charcoal placeholder-charcoal-muted focus:border-burgundy transition-all shadow-sm"
-            style={{ fontSize: '16px', minHeight: '52px', boxShadow: showDropdown && (dropdownItems.length > 0 || showRecent) ? 'var(--shadow-md)' : 'var(--shadow-sm)' }}
+            style={{
+              width: '100%',
+              paddingLeft: 52,
+              paddingRight: query ? 52 : 16,
+              height: 56,
+              borderRadius: 'var(--shape-full)',
+              background: 'var(--md-surface-container-high)',
+              border: 'none',
+              outline: 'none',
+              boxShadow: '0 1px 2px rgba(0,0,0,.08), 0 2px 6px 2px rgba(0,0,0,.04)',
+              fontSize: 16,
+              letterSpacing: '0.5px',
+              color: 'var(--md-on-surface)',
+              fontFamily: 'inherit',
+            }}
           />
 
           {/* Clear button */}
           {query && (
             <button
               onClick={() => { setQuery(''); setSuggestions([]); setShowDropdown(false); inputRef.current?.focus(); }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-cream-dark flex items-center justify-center hover:bg-cream-deeper transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 btn-icon"
+              style={{ width: 40, height: 40 }}
             >
-              <svg className="w-3.5 h-3.5 text-charcoal-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <span className="material-symbols-rounded ms-20" style={{ color: 'var(--md-on-surface-variant)' }}>close</span>
             </button>
           )}
         </div>
@@ -213,8 +221,11 @@ export const SearchPage: React.FC = () => {
                     onMouseDown={() => handleSuggestionClick(s)}
                     onMouseEnter={() => setActiveSuggestion(i)}
                   >
-                    <div className="w-8 h-8 rounded-full bg-burgundy-glow flex items-center justify-center flex-shrink-0">
-                      <span className="text-base">🍷</span>
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'var(--md-primary-container)' }}
+                    >
+                      <span className="material-symbols-rounded ms-filled" style={{ fontSize: 16, color: 'var(--md-on-primary-container)' }}>wine_bar</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       {/* Highlight matching part */}
@@ -263,21 +274,29 @@ export const SearchPage: React.FC = () => {
         )}
       </div>
 
-      {/* ── Filter chips ── */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-        {filterChips.map(chip => (
-          <button
-            key={chip.value}
-            onClick={() => setActiveFilter(chip.value)}
-            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 min-h-[40px] ${
-              activeFilter === chip.value
-                ? 'bg-burgundy text-cream shadow-sm'
-                : `bg-white border border-cream-dark text-charcoal-light hover:border-burgundy/30 ${chip.color}`
-            }`}
-          >
-            {chip.label}
-          </button>
-        ))}
+      {/* ── Filter chips MD3 ── */}
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        {filterChips.map(chip => {
+          const active = activeFilter === chip.value;
+          return (
+            <button
+              key={chip.value}
+              onClick={() => setActiveFilter(chip.value)}
+              className="chip whitespace-nowrap flex items-center gap-2"
+              style={active ? {
+                background: 'var(--md-secondary-container)',
+                borderColor: 'var(--md-secondary-container)',
+                color: 'var(--md-on-secondary-container)',
+              } : {}}
+            >
+              {active && (
+                <span className="material-symbols-rounded ms-filled" style={{ fontSize: 18, lineHeight: 1 }}>check</span>
+              )}
+              <span className="material-symbols-rounded ms-20" style={{ fontSize: 18, lineHeight: 1 }}>{chip.icon}</span>
+              {chip.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── Searching skeleton ── */}
