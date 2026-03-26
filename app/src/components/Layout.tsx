@@ -58,7 +58,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           <main
             className="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 py-5 md:pb-8 safe-area-x"
             style={{
-              paddingTop: 'calc(48px + 12px)',
+              paddingTop: 'calc(48px + env(safe-area-inset-top, 0px) + 16px)',
               paddingBottom: 'calc(96px + env(safe-area-inset-bottom, 0px) + 24px)',
             }}
           >

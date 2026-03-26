@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { searchWine, getWineSuggestions } from '../services/gemini';
 import { WineCard } from '../components/WineCard';
+import { SEED_WINES } from '../data/seedData';
 import type { Wine, WineType } from '../types';
 
 const RECENT_KEY = 'winecircle_recent_searches';
@@ -87,14 +88,42 @@ export const SearchPage: React.FC = () => {
     setLoadingSuggestions(true);
     setSuggestionsError(false);
     setShowDropdown(true);
+
+    // Local seed data matches first (instant, no API call)
+    const lower = q.trim().toLowerCase();
+    
+    // Prioritize name matches, then grape/producer
+    const nameMatches = SEED_WINES
+      .filter(w => w.name.toLowerCase().includes(lower))
+      .map(w => w.name);
+    const grapeMatches = SEED_WINES
+      .filter(w => !w.name.toLowerCase().includes(lower) && (w.grape?.toLowerCase().includes(lower) || w.producer?.toLowerCase().includes(lower)))
+      .map(w => `${w.name} (${w.grape})`);
+
+    // Also check popular searches
+    const popularMatches = POPULAR
+      .filter(p => p.toLowerCase().includes(lower));
+
+    const localResults = [...new Set([...nameMatches, ...popularMatches, ...grapeMatches])].slice(0, 5);
+
+    if (localResults.length >= 3) {
+      // Enough local results, skip AI
+      setSuggestions(localResults);
+      setLoadingSuggestions(false);
+      return;
+    }
+
     try {
-      const res = await getWineSuggestions(q.trim());
-      setSuggestions(res.slice(0, 5));
+      const aiRes = await getWineSuggestions(q.trim());
+      // Merge: local first, then AI (deduplicated)
+      const merged = [...new Set([...localResults, ...aiRes])].slice(0, 5);
+      setSuggestions(merged);
       setShowDropdown(true);
     } catch (err) {
       console.error('Suggestions failed:', err);
-      setSuggestions([]);
-      setSuggestionsError(true);
+      // Fall back to local results even if AI fails
+      setSuggestions(localResults.length > 0 ? localResults : []);
+      setSuggestionsError(localResults.length === 0);
       setShowDropdown(true);
     } finally { setLoadingSuggestions(false); }
   }, []);

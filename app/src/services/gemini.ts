@@ -62,7 +62,7 @@ export async function searchWine(query: string): Promise<Wine | null> {
 
 export async function getWineSuggestions(query: string): Promise<string[]> {
   const model = genAI.getGenerativeModel({ model: MODEL });
-  const prompt = `Suggest 5 wine names that match or are similar to "${query}". Return ONLY a JSON array of strings. No markdown.`;
+  const prompt = `Given the wine search query "${query}", suggest exactly 5 real wine names that START WITH or CONTAIN this text. Prioritize exact prefix matches first, then close matches. Return ONLY a JSON array of strings. No markdown, no explanation.`;
   const result = await model.generateContent(prompt);
   const text = result.response.text().trim();
   const jsonStr = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
