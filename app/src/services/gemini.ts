@@ -15,12 +15,12 @@ export async function searchWine(query: string): Promise<Wine | null> {
   try {
     const model = genAI.getGenerativeModel({ model: MODEL });
     const prompt = `You are a wine expert. Given the wine query "${query}", return a JSON object with these fields:
-    - name: string (full wine name)
+    - name: string (full wine name INCLUDING vintage year, e.g. "Opus One 2019" not just "Opus One")
     - producer: string (winery/producer)
     - region: string (wine region)
     - country: string
     - grape: string (grape variety/varieties)
-    - year: number (vintage year, or null if unknown)
+    - year: number (vintage year — REQUIRED, use most recent notable vintage if not specified)
     - tastingNotes: string (brief tasting notes, 2-3 sentences)
     - type: string (one of: "red", "white", "rosé", "sparkling", "dessert", "orange")
     - price: number (approximate price in BRL, or null)
@@ -32,6 +32,7 @@ export async function searchWine(query: string): Promise<Wine | null> {
       - tannin: number (0-100, 0=very smooth, 100=very tannic)
       - acidity: number (0-100, 0=soft, 100=high acidity)
     
+    IMPORTANT: The vintage year is like the wine's surname — always include it.
     Return ONLY valid JSON, no markdown, no explanation.`;
 
     const result = await model.generateContent(prompt);
@@ -62,7 +63,7 @@ export async function searchWine(query: string): Promise<Wine | null> {
 
 export async function getWineSuggestions(query: string): Promise<string[]> {
   const model = genAI.getGenerativeModel({ model: MODEL });
-  const prompt = `Given the wine search query "${query}", suggest exactly 5 real wine names that START WITH or CONTAIN this text. Prioritize exact prefix matches first, then close matches. Return ONLY a JSON array of strings. No markdown, no explanation.`;
+  const prompt = `Given the wine search query "${query}", suggest exactly 5 real wine names with vintage year (e.g. "Opus One 2019", "Château Margaux 2015") that START WITH or CONTAIN this text. Prioritize exact prefix matches first, then close matches. Always include the vintage year. Return ONLY a JSON array of strings. No markdown, no explanation.`;
   const result = await model.generateContent(prompt);
   const text = result.response.text().trim();
   const jsonStr = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();

@@ -102,7 +102,12 @@ export const WineCard: React.FC<Props> = ({ wine, blind, blindLabel, onClick, ch
                   fontFamily: 'Playfair Display, serif', fontSize: 15, fontWeight: 600,
                   color: 'var(--md3-on-surface)', lineHeight: 1.3,
                   display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden',
-                }}>{wine.name}</h3>
+                }}>
+                  {wine.name}
+                  {wine.year && !wine.name.includes(String(wine.year)) && (
+                    <span style={{ fontWeight: 400, color: 'var(--md3-on-surface-variant)' }}> {wine.year}</span>
+                  )}
+                </h3>
                 {wine.producer && (
                   <p className="type-body-small" style={{ color: 'var(--md3-on-surface-variant)', marginTop: 2 }}>{wine.producer}</p>
                 )}
