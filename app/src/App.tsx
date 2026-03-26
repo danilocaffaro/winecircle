@@ -15,6 +15,16 @@ import { ExpensePage } from './pages/ExpensePage';
 import { SearchPage } from './pages/SearchPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AuthPage } from './pages/AuthPage';
+import { PushNotificationPrompt } from './hooks/usePushNotifications';
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.error('SW registration failed:', err);
+    });
+  });
+}
 
 const AppRoutes: React.FC = () => {
   const { authenticated, loading } = useAuth();
@@ -51,23 +61,26 @@ const AppRoutes: React.FC = () => {
   }
 
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/clubs" element={<ClubList />} />
-        <Route path="/clubs/new" element={<ClubForm />} />
-        <Route path="/clubs/:id" element={<ClubDetail />} />
-        <Route path="/clubs/:id/edit" element={<ClubForm />} />
-        <Route path="/clubs/:clubId/events/new" element={<EventForm />} />
-        <Route path="/events/:id" element={<EventDetail />} />
-        <Route path="/events/:id/edit" element={<EventForm />} />
-        <Route path="/events/:id/tasting" element={<TastingPage />} />
-        <Route path="/events/:id/results" element={<ResultsPage />} />
-        <Route path="/events/:id/expenses" element={<ExpensePage />} />
-        <Route path="/search" element={<SearchPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-      </Routes>
-    </Layout>
+    <>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/clubs" element={<ClubList />} />
+          <Route path="/clubs/new" element={<ClubForm />} />
+          <Route path="/clubs/:id" element={<ClubDetail />} />
+          <Route path="/clubs/:id/edit" element={<ClubForm />} />
+          <Route path="/clubs/:clubId/events/new" element={<EventForm />} />
+          <Route path="/events/:id" element={<EventDetail />} />
+          <Route path="/events/:id/edit" element={<EventForm />} />
+          <Route path="/events/:id/tasting" element={<TastingPage />} />
+          <Route path="/events/:id/results" element={<ResultsPage />} />
+          <Route path="/events/:id/expenses" element={<ExpensePage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Routes>
+      </Layout>
+      <PushNotificationPrompt />
+    </>
   );
 };
 
