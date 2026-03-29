@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -8,9 +8,9 @@ import {
   arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import toast from 'react-hot-toast';
-import { getEvent, getClub, saveEvent } from '../services/storage';
+import { getEvent, getClub, updateEvent, saveEventRankings, getUsers, userToMember } from '../services/pocketbase';
 import { SortableWineCard } from '../components/SortableWineCard';
-import type { MemberRanking, Wine, WineTastingNote } from '../types';
+import type { MemberRanking, Wine, WineTastingNote, Member } from '../types';
 
 const STEPS = ['rank', 'notes'] as const;
 type Step = typeof STEPS[number];
@@ -38,13 +38,14 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
 export const TastingPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const event = id ? getEvent(id) : undefined;
-  const club = event ? getClub(event.clubId) : undefined;
+  const [event, setEvent] = useState<any>(null);
+  const [club, setClub] = useState<any>(null);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const members = club?.members.filter(m => event?.memberIds.includes(m.id)) || [];
   const [currentMemberIndex, setCurrentMemberIndex] = useState(0);
-  const [rankings, setRankings] = useState<MemberRanking[]>(event?.rankings || []);
-  const [wineOrder, setWineOrder] = useState<Wine[]>(event?.wines ? [...event.wines] : []);
+  const [rankings, setRankings] = useState<MemberRanking[]>([]);
+  const [wineOrder, setWineOrder] = useState<Wine[]>([]);
   const [step, setStep] = useState<Step>('rank');
   const [notes, setNotes] = useState<Record<string, WineTastingNote>>({});
   const [activeNoteWine, setActiveNoteWine] = useState<string | null>(null);
@@ -54,6 +55,29 @@ export const TastingPage: React.FC = () => {
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        const evt = await getEvent(id);
+        setEvent(evt);
+        const c = await getClub(evt.club);
+        setClub(c);
+        const participantIds: string[] = evt.participants || [];
+        if (participantIds.length > 0) {
+          const users = await getUsers(participantIds);
+          setMembers(users.map(userToMember));
+        }
+        setRankings(evt.rankings || []);
+        setWineOrder(evt.wines ? [...evt.wines] : []);
+      } catch (e) {
+        console.error('Failed to load tasting:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
 
   const handleDragEnd = useCallback((e: DragEndEvent) => {
     const { active, over } = e;
@@ -65,6 +89,14 @@ export const TastingPage: React.FC = () => {
       });
     }
   }, []);
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+        <div className="w-8 h-8 border-3 border-current/30 border-t-current rounded-full animate-spin" style={{ color: 'var(--dp-gold)' }} />
+      </div>
+    );
+  }
 
   if (!event || !club) {
     return (
@@ -78,6 +110,7 @@ export const TastingPage: React.FC = () => {
   const currentMember = members[currentMemberIndex];
   const hasRanked = (memberId: string) => rankings.some(r => r.memberId === memberId);
   const allDone = rankings.length >= members.length;
+  const wines: Wine[] = event.wines || [];
 
   const getNoteForWine = (wineId: string): WineTastingNote =>
     notes[wineId] || { aroma: '', palate: '', finish: '', rating: 0 };
@@ -86,27 +119,37 @@ export const TastingPage: React.FC = () => {
     setNotes(prev => ({ ...prev, [wineId]: { ...getNoteForWine(wineId), [field]: value } }));
   };
 
-  const submitRanking = () => {
+  const submitRanking = async () => {
     if (!currentMember) return;
     const newRanking: MemberRanking = { memberId: currentMember.id, wineOrder: wineOrder.map(w => w.id), notes };
     const updatedRankings = [...rankings.filter(r => r.memberId !== currentMember.id), newRanking];
     setRankings(updatedRankings);
-    saveEvent({ ...event, rankings: updatedRankings });
-    toast.success(`${currentMember.name}'s tasting saved!`);
+
+    try {
+      await saveEventRankings(event.id, updatedRankings);
+      toast.success(`${currentMember.name}'s tasting saved!`);
+    } catch (e) {
+      toast.error('Failed to save ranking');
+    }
+
     if (currentMemberIndex < members.length - 1) {
       setCurrentMemberIndex(i => i + 1);
-      setWineOrder([...event.wines]);
+      setWineOrder([...wines]);
       setNotes({});
       setStep('rank');
       setActiveNoteWine(null);
     }
   };
 
-  const finishTasting = () => {
+  const finishTasting = async () => {
     if (rankings.length < members.length) { toast.error('Not all members have ranked yet'); return; }
-    saveEvent({ ...event, rankings, status: 'completed' as const });
-    toast.success('Tasting completed!');
-    navigate(`/events/${event.id}/results`);
+    try {
+      await updateEvent(event.id, { rankings, status: 'completed' });
+      toast.success('Tasting completed!');
+      navigate(`/events/${event.id}/results`);
+    } catch (e) {
+      toast.error('Failed to complete tasting');
+    }
   };
 
   return (
@@ -117,7 +160,7 @@ export const TastingPage: React.FC = () => {
           <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-primary)' }}>wine_bar</span>
           <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>Tasting</h1>
         </div>
-        <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{event.name}</p>
+        <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{event.title}</p>
       </div>
 
       {/* Progress */}
@@ -128,12 +171,12 @@ export const TastingPage: React.FC = () => {
         </div>
         <div className="w-full h-2.5 rounded-full" style={{ background: 'var(--md-surface-container-highest)' }}>
           <div className="h-2.5 rounded-full transition-all duration-500"
-            style={{ width: `${(rankings.length / members.length) * 100}%`, background: 'var(--md-primary)' }} />
+            style={{ width: `${members.length > 0 ? (rankings.length / members.length) * 100 : 0}%`, background: 'var(--md-primary)' }} />
         </div>
         <div className="flex flex-wrap gap-2 mt-4">
           {members.map((m, i) => (
             <button key={m.id}
-              onClick={() => { setCurrentMemberIndex(i); setWineOrder([...event.wines]); setNotes({}); setStep('rank'); }}
+              onClick={() => { setCurrentMemberIndex(i); setWineOrder([...wines]); setNotes({}); setStep('rank'); }}
               className="chip" style={{
                 background: hasRanked(m.id) ? 'var(--md-tertiary-container)' : i === currentMemberIndex ? 'var(--md-primary)' : 'var(--md-surface-container)',
                 color: hasRanked(m.id) ? 'var(--md-on-tertiary-container)' : i === currentMemberIndex ? 'var(--md-on-primary)' : 'var(--md-on-surface-variant)',
@@ -217,7 +260,6 @@ export const TastingPage: React.FC = () => {
                                 ))}
                               </span>
                             )}
-                            {(note.aroma || note.palate) && <span className="type-body-small truncate" style={{ color: 'var(--md-on-surface-variant)' }}>{note.aroma || note.palate}</span>}
                           </div>
                         )}
                       </div>

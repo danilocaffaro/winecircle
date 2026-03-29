@@ -1,9 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getClubs, getEventsByClub } from '../services/storage';
+import { getMyClubs, getEvents } from '../services/pocketbase';
 
 export const ClubList: React.FC = () => {
-  const clubs = getClubs();
+  const [clubs, setClubs] = useState<any[]>([]);
+  const [eventCounts, setEventCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const c = await getMyClubs();
+        setClubs(c);
+        // Fetch event counts in parallel
+        const counts: Record<string, number> = {};
+        await Promise.all(c.map(async club => {
+          try {
+            const evts = await getEvents(club.id);
+            counts[club.id] = evts.length;
+          } catch { counts[club.id] = 0; }
+        }));
+        setEventCounts(counts);
+      } catch (e) {
+        console.error('Failed to load clubs:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+        <div className="w-8 h-8 border-3 border-current/30 border-t-current rounded-full animate-spin" style={{ color: 'var(--dp-gold)' }} />
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
@@ -38,7 +70,6 @@ export const ClubList: React.FC = () => {
           padding: '48px 24px',
           textAlign: 'center',
         }}>
-          {/* Wine glass illustration — subtle, not an empty state cliché */}
           <div style={{
             width: 80, height: 80, borderRadius: '50%',
             background: 'var(--dp-surface-2)',
@@ -94,7 +125,6 @@ export const ClubList: React.FC = () => {
             Create Club
           </Link>
 
-          {/* Subtle hint about what comes next */}
           <div style={{
             marginTop: 40, padding: '16px 20px',
             borderRadius: 12,
@@ -120,7 +150,8 @@ export const ClubList: React.FC = () => {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {clubs.map(club => {
-            const eventCount = getEventsByClub(club.id).length;
+            const memberCount = (club.members || []).length;
+            const eventCount = eventCounts[club.id] || 0;
             return (
               <Link
                 key={club.id}
@@ -161,15 +192,11 @@ export const ClubList: React.FC = () => {
                   <div style={{ display: 'flex', gap: 16 }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <span className="material-symbols-rounded" style={{ fontSize: 14, color: 'var(--dp-cream-faint)' }}>person</span>
-                      <span style={{ fontSize: 12, color: 'var(--dp-cream-faint)' }}>
-                        {club.members.length}
-                      </span>
+                      <span style={{ fontSize: 12, color: 'var(--dp-cream-faint)' }}>{memberCount}</span>
                     </span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       <span className="material-symbols-rounded" style={{ fontSize: 14, color: 'var(--dp-cream-faint)' }}>event</span>
-                      <span style={{ fontSize: 12, color: 'var(--dp-cream-faint)' }}>
-                        {eventCount}
-                      </span>
+                      <span style={{ fontSize: 12, color: 'var(--dp-cream-faint)' }}>{eventCount}</span>
                     </span>
                   </div>
                 </div>

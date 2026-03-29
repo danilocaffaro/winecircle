@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
 import toast from 'react-hot-toast';
-import type { TastingEvent, Wine, EventType } from '../types';
-import { getClub, getEvent, saveEvent } from '../services/storage';
+import type { Wine, EventType } from '../types';
+import { getClub, getEvent, createEvent, updateEvent, getUsers, userToMember } from '../services/pocketbase';
 import { searchWine } from '../services/gemini';
 import { WineCard } from '../components/WineCard';
+import { v4 as uuidv4 } from 'uuid';
 
 export const EventForm: React.FC = () => {
   const { clubId, id } = useParams();
@@ -19,22 +19,47 @@ export const EventForm: React.FC = () => {
   const [wines, setWines] = useState<Wine[]>([]);
   const [wineSearch, setWineSearch] = useState('');
   const [searching, setSearching] = useState(false);
-
-  const existingEvent = id ? getEvent(id) : undefined;
-  const effectiveClubId = clubId || existingEvent?.clubId || '';
-  const club = getClub(effectiveClubId);
+  const [club, setClub] = useState<any>(null);
+  const [members, setMembers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [existingEvent, setExistingEvent] = useState<any>(null);
 
   useEffect(() => {
-    if (existingEvent) {
-      setName(existingEvent.name);
-      setDate(existingEvent.date);
-      setType(existingEvent.type);
-      setSelectedMemberIds(existingEvent.memberIds);
-      setWines(existingEvent.wines);
-    } else if (club) {
-      setSelectedMemberIds(club.members.map(m => m.id));
-    }
-  }, []);
+    (async () => {
+      try {
+        let effectiveClubId = clubId;
+
+        if (id) {
+          const evt = await getEvent(id);
+          setExistingEvent(evt);
+          effectiveClubId = evt.club;
+          setName(evt.title || '');
+          setDate(evt.date?.split(' ')[0] || evt.date || '');
+          setType(evt.type || 'open');
+          setWines(evt.wines || []);
+          setSelectedMemberIds(evt.participants || []);
+        }
+
+        if (effectiveClubId) {
+          const c = await getClub(effectiveClubId);
+          setClub(c);
+          const memberIds: string[] = c.members || [];
+          if (memberIds.length > 0) {
+            const users = await getUsers(memberIds);
+            setMembers(users.map(userToMember));
+            // If creating new event, select all members by default
+            if (!id) setSelectedMemberIds(memberIds);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load form data:', e);
+        toast.error('Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [clubId, id]);
 
   const handleSearchWine = async () => {
     if (!wineSearch.trim()) return;
@@ -57,24 +82,54 @@ export const EventForm: React.FC = () => {
   const removeWine = (wineId: string) => setWines(wines.filter(w => w.id !== wineId));
 
   const toggleMember = (memberId: string) => {
-    setSelectedMemberIds(prev => prev.includes(memberId) ? prev.filter(id => id !== memberId) : [...prev, memberId]);
+    setSelectedMemberIds(prev => prev.includes(memberId) ? prev.filter(i => i !== memberId) : [...prev, memberId]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) { toast.error('Event name is required'); return; }
     if (wines.length < 2) { toast.error('Add at least 2 wines'); return; }
-    if (selectedMemberIds.length < 1) { toast.error('Select at least 1 member'); return; }
-    const event: TastingEvent = {
-      id: id || uuidv4(), clubId: effectiveClubId, name: name.trim(), date, type, wines,
-      memberIds: selectedMemberIds, rankings: existingEvent?.rankings || [],
-      expenses: existingEvent?.expenses || null, status: existingEvent?.status || 'planning',
-      createdAt: existingEvent?.createdAt || new Date().toISOString(),
-    };
-    saveEvent(event);
-    toast.success(isEditing ? 'Event updated!' : 'Event created!');
-    navigate(`/events/${event.id}`);
+    if (selectedMemberIds.length < 1) { toast.error('Select at least 1 participant'); return; }
+
+    setSaving(true);
+    try {
+      if (isEditing && id) {
+        await updateEvent(id, {
+          title: name.trim(),
+          date,
+          type,
+          wines,
+          participants: selectedMemberIds,
+        });
+        toast.success('Event updated!');
+        navigate(`/events/${id}`);
+      } else {
+        const effectiveClubId = clubId || existingEvent?.club || '';
+        const evt = await createEvent({
+          title: name.trim(),
+          club: effectiveClubId,
+          date,
+          type,
+          wines,
+          participants: selectedMemberIds,
+        });
+        toast.success('Event created!');
+        navigate(`/events/${evt.id}`);
+      }
+    } catch (e: any) {
+      toast.error(e?.data?.message || 'Failed to save event');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+        <div className="w-8 h-8 border-3 border-current/30 border-t-current rounded-full animate-spin" style={{ color: 'var(--dp-gold)' }} />
+      </div>
+    );
+  }
 
   if (!club) {
     return (
@@ -126,13 +181,13 @@ export const EventForm: React.FC = () => {
           </div>
         </div>
 
-        {/* Members */}
+        {/* Participants */}
         <div>
           <label className="type-label-large block mb-2" style={{ color: 'var(--md-on-surface)' }}>
-            Participants ({selectedMemberIds.length}/{club.members.length})
+            Participants ({selectedMemberIds.length}/{members.length})
           </label>
           <div className="flex flex-wrap gap-2">
-            {club.members.map(member => (
+            {members.map(member => (
               <button key={member.id} type="button" onClick={() => toggleMember(member.id)}
                 className="chip" style={{
                   background: selectedMemberIds.includes(member.id) ? 'var(--md-primary)' : 'var(--md-surface)',
@@ -183,8 +238,8 @@ export const EventForm: React.FC = () => {
           </div>
         </div>
 
-        <button type="submit" className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
-          {isEditing ? 'Save Changes' : 'Create Event'}
+        <button type="submit" disabled={saving} className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)', opacity: saving ? 0.7 : 1 }}>
+          {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Event'}
         </button>
       </form>
     </div>

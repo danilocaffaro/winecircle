@@ -1,13 +1,8 @@
-import PocketBase from 'pocketbase';
+import PocketBase, { type RecordModel } from 'pocketbase';
 
 const PB_URL = import.meta.env.VITE_POCKETBASE_URL || 'https://winecircle.REDACTED_LEGACY_HOST.sslip.io/pb';
 
 export const pb = new PocketBase(PB_URL);
-
-// Persist auth in localStorage
-pb.authStore.onChange(() => {
-  // PocketBase SDK auto-persists to localStorage
-});
 
 // ── Auth helpers ──
 
@@ -18,7 +13,6 @@ export async function signUp(email: string, password: string, displayName: strin
     passwordConfirm: password,
     display_name: displayName,
   });
-  // Auto login after signup
   await pb.collection('users').authWithPassword(email, password);
   return user;
 }
@@ -47,10 +41,30 @@ export async function updateProfile(data: { display_name?: string; pix_key?: str
   return pb.collection('users').update(user.id, data);
 }
 
+export async function getUser(id: string) {
+  return pb.collection('users').getOne(id);
+}
+
+export async function getUsers(ids: string[]) {
+  if (ids.length === 0) return [];
+  const filter = ids.map(id => `id = "${id}"`).join(' || ');
+  return pb.collection('users').getFullList({ filter });
+}
+
 // ── Clubs ──
 
 export async function getClubs() {
   return pb.collection('wc_clubs').getFullList({ sort: '-created', expand: 'owner,members' });
+}
+
+export async function getMyClubs() {
+  const user = getCurrentUser();
+  if (!user) return [];
+  return pb.collection('wc_clubs').getFullList({
+    filter: `members ~ "${user.id}"`,
+    sort: '-created',
+    expand: 'owner,members',
+  });
 }
 
 export async function getClub(id: string) {
@@ -67,6 +81,14 @@ export async function createClub(data: { name: string; description?: string; typ
   });
 }
 
+export async function updateClub(id: string, data: Record<string, any>) {
+  return pb.collection('wc_clubs').update(id, data);
+}
+
+export async function deleteClub(id: string) {
+  return pb.collection('wc_clubs').delete(id);
+}
+
 export async function joinClub(clubId: string) {
   const user = getCurrentUser();
   if (!user) throw new Error('Not authenticated');
@@ -78,22 +100,31 @@ export async function joinClub(clubId: string) {
   return club;
 }
 
+export async function leaveClub(clubId: string) {
+  const user = getCurrentUser();
+  if (!user) throw new Error('Not authenticated');
+  const club = await getClub(clubId);
+  const members = (club.members || []).filter((id: string) => id !== user.id);
+  return pb.collection('wc_clubs').update(clubId, { members });
+}
+
 // ── Events ──
 
 export async function getEvents(clubId: string) {
   return pb.collection('wc_events').getFullList({
     filter: `club = "${clubId}"`,
     sort: '-date',
-    expand: 'created_by',
+    expand: 'created_by,participants',
   });
 }
 
 export async function getEvent(id: string) {
-  return pb.collection('wc_events').getOne(id, { expand: 'club,created_by' });
+  return pb.collection('wc_events').getOne(id, { expand: 'club,created_by,participants' });
 }
 
 export async function createEvent(data: {
   title: string; club: string; date: string; type: string; wines: any[];
+  participants?: string[];
 }) {
   const user = getCurrentUser();
   if (!user) throw new Error('Not authenticated');
@@ -101,11 +132,21 @@ export async function createEvent(data: {
     ...data,
     status: 'upcoming',
     created_by: user.id,
+    rankings: [],
+    participants: data.participants || [],
   });
+}
+
+export async function updateEvent(id: string, data: Record<string, any>) {
+  return pb.collection('wc_events').update(id, data);
 }
 
 export async function updateEventStatus(eventId: string, status: string) {
   return pb.collection('wc_events').update(eventId, { status });
+}
+
+export async function saveEventRankings(eventId: string, rankings: any[]) {
+  return pb.collection('wc_events').update(eventId, { rankings });
 }
 
 // ── Ratings ──
@@ -116,16 +157,12 @@ export async function submitRating(data: {
 }) {
   const user = getCurrentUser();
   if (!user) throw new Error('Not authenticated');
-  
-  // Check if user already rated this wine in this event
   try {
     const existing = await pb.collection('wc_ratings').getFirstListItem(
       `event = "${data.event}" && user = "${user.id}" && wine_index = ${data.wine_index}`
     );
-    // Update existing rating
     return pb.collection('wc_ratings').update(existing.id, data);
   } catch {
-    // Create new rating
     return pb.collection('wc_ratings').create({ ...data, user: user.id });
   }
 }
@@ -158,7 +195,7 @@ export async function getEventExpenses(eventId: string) {
   });
 }
 
-// ── Payments (the key feature!) ──
+// ── Payments ──
 
 export async function createPayments(expenseId: string, splits: Array<{
   debtor: string; creditor: string; amount: number; pix_key?: string;
@@ -179,13 +216,23 @@ export async function createPayments(expenseId: string, splits: Array<{
 export async function getMyPayments(status?: string) {
   const user = getCurrentUser();
   if (!user) throw new Error('Not authenticated');
-  
   let filter = `debtor = "${user.id}" || creditor = "${user.id}"`;
   if (status) filter = `(${filter}) && status = "${status}"`;
-  
   return pb.collection('wc_payments').getFullList({
     filter,
     expand: 'debtor,creditor,expense',
+    sort: '-created',
+  });
+}
+
+export async function getEventPayments(eventId: string) {
+  // Get expenses for event, then get payments for those expenses
+  const expenses = await getEventExpenses(eventId);
+  if (expenses.length === 0) return [];
+  const filter = expenses.map(e => `expense = "${e.id}"`).join(' || ');
+  return pb.collection('wc_payments').getFullList({
+    filter,
+    expand: 'debtor,creditor',
     sort: '-created',
   });
 }
@@ -228,9 +275,7 @@ export function unsubscribeAll() {
 export async function savePushSubscription(subscription: PushSubscription) {
   const user = getCurrentUser();
   if (!user) throw new Error('Not authenticated');
-  
   const sub = subscription.toJSON();
-  
   try {
     const existing = await pb.collection('wc_push_subs').getFirstListItem(
       `user = "${user.id}" && endpoint = "${sub.endpoint}"`
@@ -247,4 +292,14 @@ export async function savePushSubscription(subscription: PushSubscription) {
       user_agent: navigator.userAgent,
     });
   }
+}
+
+// ── Helper: convert PB record to Member-like shape (for backward compat) ──
+export function userToMember(user: RecordModel) {
+  return {
+    id: user.id,
+    name: user.display_name || user.name || user.email,
+    email: user.email,
+    pixKey: user.pix_key,
+  };
 }

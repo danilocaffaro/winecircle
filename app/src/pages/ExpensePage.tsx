@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getEvent, getClub, saveEvent } from '../services/storage';
 import { calculateExpenseSplits } from '../utils/algorithms';
 import { useAuth } from '../contexts/AuthContext';
 import {
+  getEvent as getEventPB, getClub as getClubPB,
   createExpense, createPayments,
   markAsPaid, confirmPayment, disputePayment,
-  pb, getCurrentUser,
+  pb, getCurrentUser, getUsers, userToMember,
 } from '../services/pocketbase';
-import type { Payment, ExpenseSplit } from '../types';
+import type { Payment, ExpenseSplit, Member } from '../types';
 
 type PaymentStatus = 'pending' | 'paid' | 'confirmed' | 'disputed';
 
@@ -37,17 +37,40 @@ export const ExpensePage: React.FC = () => {
   const { authenticated } = useAuth();
   const currentUser = getCurrentUser();
 
-  const event = id ? getEvent(id) : undefined;
-  const club = event ? getClub(event.clubId) : undefined;
-  const members = club?.members.filter(m => event?.memberIds.includes(m.id)) || [];
+  const [event, setEvent] = useState<any>(null);
+  const [club, setClub] = useState<any>(null);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [totalCost, setTotalCost] = useState(event?.expenses?.totalCost || 0);
-  const [payments, setPayments] = useState<Payment[]>(
-    event?.expenses?.payments || members.map(m => ({ memberId: m.id, amount: 0 }))
-  );
-  const [calculated, setCalculated] = useState(Boolean(event?.expenses?.splits?.length));
+  const [totalCost, setTotalCost] = useState(0);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [calculated, setCalculated] = useState(false);
   const [paymentRecords, setPaymentRecords] = useState<PaymentRecord[]>([]);
   const [syncing, setSyncing] = useState(false);
+
+  // Load event + club + members from PB
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        const evt = await getEventPB(id);
+        setEvent(evt);
+        const c = await getClubPB(evt.club);
+        setClub(c);
+        const participantIds: string[] = evt.participants || [];
+        if (participantIds.length > 0) {
+          const users = await getUsers(participantIds);
+          const m = users.map(userToMember);
+          setMembers(m);
+          setPayments(m.map(member => ({ memberId: member.id, amount: 0 })));
+        }
+      } catch (e) {
+        console.error('Failed to load expense data:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
 
   // Load payment records from PocketBase when authenticated
   const loadPaymentRecords = useCallback(async () => {
@@ -75,6 +98,14 @@ export const ExpensePage: React.FC = () => {
     return () => { pb.collection('wc_payments').unsubscribe(); };
   }, [authenticated, loadPaymentRecords]);
 
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+        <div className="w-8 h-8 border-3 border-current/30 border-t-current rounded-full animate-spin" style={{ color: 'var(--dp-gold)' }} />
+      </div>
+    );
+  }
+
   if (!event || !club) {
     return (
       <div className="text-center py-16">
@@ -100,14 +131,12 @@ export const ExpensePage: React.FC = () => {
     }
     setCalculated(true);
     const expSplits = calculateExpenseSplits(members, totalCost, payments);
-    saveEvent({ ...event, expenses: { totalCost, payments, splits: expSplits } });
     toast.success('Expenses calculated!');
 
-    // Sync to PocketBase if authenticated
-    if (authenticated && currentUser) {
-      setSyncing(true);
-      try {
-        const expense = await createExpense({
+    // Sync to PocketBase
+    setSyncing(true);
+    try {
+      const expense = await createExpense({
           event: id!,
           total_amount: totalCost,
           split_type: 'equal',
@@ -132,11 +161,10 @@ export const ExpensePage: React.FC = () => {
         }
       } catch (err) {
         console.error('PB sync failed:', err);
-        // localStorage still saved — not a critical failure
+        toast.error('Failed to save expenses');
       } finally {
         setSyncing(false);
       }
-    }
   };
 
   const handleMarkPaid = async (paymentId: string) => {
@@ -187,7 +215,7 @@ export const ExpensePage: React.FC = () => {
           <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-primary)' }}>payments</span>
           <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>Expenses</h1>
         </div>
-        <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{event.name}</p>
+        <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{event.title || event.name}</p>
       </div>
 
       {/* Total Cost */}

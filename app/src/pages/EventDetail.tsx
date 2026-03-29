@@ -1,14 +1,58 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getEvent, getClub, saveEvent } from '../services/storage';
+import { getEvent, getClub, updateEvent, getUsers, userToMember } from '../services/pocketbase';
 import { WineCard } from '../components/WineCard';
+import type { Member } from '../types';
 
 export const EventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const event = id ? getEvent(id) : undefined;
-  const club = event ? getClub(event.clubId) : undefined;
+  const [event, setEvent] = useState<any>(null);
+  const [club, setClub] = useState<any>(null);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        const evt = await getEvent(id);
+        setEvent(evt);
+        const c = await getClub(evt.club);
+        setClub(c);
+        // Resolve participants
+        const participantIds: string[] = evt.participants || [];
+        if (participantIds.length > 0) {
+          const users = await getUsers(participantIds);
+          setMembers(users.map(userToMember));
+        }
+      } catch (e) {
+        console.error('Failed to load event:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  const startTasting = async () => {
+    if (!event) return;
+    try {
+      await updateEvent(event.id, { status: 'tasting' });
+      toast.success('Tasting started!');
+      navigate(`/events/${event.id}/tasting`);
+    } catch (e: any) {
+      toast.error('Failed to start tasting');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+        <div className="w-8 h-8 border-3 border-current/30 border-t-current rounded-full animate-spin" style={{ color: 'var(--dp-gold)' }} />
+      </div>
+    );
+  }
 
   if (!event || !club) {
     return (
@@ -22,14 +66,8 @@ export const EventDetail: React.FC = () => {
     );
   }
 
-  const members = club.members.filter(m => event.memberIds.includes(m.id));
-
-  const startTasting = () => {
-    const updated = { ...event, status: 'tasting' as const };
-    saveEvent(updated);
-    toast.success('Tasting started!');
-    navigate(`/events/${event.id}/tasting`);
-  };
+  const wines = event.wines || [];
+  const status = event.status || 'upcoming';
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
@@ -43,7 +81,7 @@ export const EventDetail: React.FC = () => {
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 mr-3">
           <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
-            {event.name}
+            {event.title}
           </h1>
           <div className="flex items-center gap-2 mt-1">
             <span className="material-symbols-rounded" style={{ fontSize: 16, color: 'var(--md-on-surface-variant)' }}>event</span>
@@ -58,15 +96,15 @@ export const EventDetail: React.FC = () => {
           </div>
         </div>
         <span className="chip chip-selected type-label-small" style={{
-          background: event.status === 'completed' ? 'var(--md-tertiary-container)' :
-                     event.status === 'tasting' ? 'var(--md-secondary-container)' :
+          background: status === 'completed' ? 'var(--md-tertiary-container)' :
+                     status === 'tasting' ? 'var(--md-secondary-container)' :
                      'var(--md-surface-container-highest)',
-          color: event.status === 'completed' ? 'var(--md-on-tertiary-container)' :
-                 event.status === 'tasting' ? 'var(--md-on-secondary-container)' :
+          color: status === 'completed' ? 'var(--md-on-tertiary-container)' :
+                 status === 'tasting' ? 'var(--md-on-secondary-container)' :
                  'var(--md-on-surface-variant)',
           borderColor: 'transparent',
         }}>
-          {event.status}
+          {status}
         </span>
       </div>
 
@@ -96,15 +134,15 @@ export const EventDetail: React.FC = () => {
         <div className="flex items-center gap-2 mb-3">
           <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20, color: 'var(--md-primary)' }}>wine_bar</span>
           <h2 className="type-title-medium" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
-            Wines ({event.wines.length})
+            Wines ({wines.length})
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {event.wines.map((wine, i) => (
+          {wines.map((wine: any, i: number) => (
             <WineCard
               key={wine.id}
               wine={wine}
-              blind={event.type === 'blind' && event.status !== 'completed'}
+              blind={event.type === 'blind' && status !== 'completed'}
               blindLabel={`Wine ${String.fromCharCode(65 + i)}`}
             />
           ))}
@@ -113,7 +151,7 @@ export const EventDetail: React.FC = () => {
 
       {/* Actions */}
       <div className="space-y-3">
-        {event.status === 'planning' && (
+        {status === 'upcoming' && (
           <>
             <button onClick={startTasting} className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
               <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>wine_bar</span>
@@ -126,14 +164,14 @@ export const EventDetail: React.FC = () => {
           </>
         )}
 
-        {event.status === 'tasting' && (
+        {status === 'tasting' && (
           <Link to={`/events/${event.id}/tasting`} className="btn-primary w-full flex items-center justify-center" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
             <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>wine_bar</span>
             Continue Tasting
           </Link>
         )}
 
-        {event.status === 'completed' && (
+        {status === 'completed' && (
           <>
             <Link to={`/events/${event.id}/results`} className="btn-primary w-full flex items-center justify-center" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
               <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>emoji_events</span>

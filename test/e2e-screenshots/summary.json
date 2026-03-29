@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-03-29T19:30:15.127Z",
+  "baseUrl": "https://winecircle.REDACTED_LEGACY_HOST.sslip.io",
+  "users": [
+    {
+      "key": "carlos",
+      "name": "Carlos Mendes",
+      "role": "Organizador / Owner"
+    },
+    {
+      "key": "marina",
+      "name": "Marina Silva",
+      "role": "Membro + Pagadora"
+    },
+    {
+      "key": "pedro",
+      "name": "Pedro Almeida",
+      "role": "Membro + Devedor"
+    },
+    {
+      "key": "ana",
+      "name": "Ana Costa",
+      "role": "Late Joiner"
+    },
+    {
+      "key": "lucas",
+      "name": "Lucas Ferreira",
+      "role": "Membro Casual"
+    },
+    {
+      "key": "juliana",
+      "name": "Juliana Rocha",
+      "role": "Sommelier / Expert"
+    }
+  ],
+  "results": {
+    "passed": 10,
+    "failed": 0,
+    "errors": []
+  },
+  "totalScreenshots": 105
+}
