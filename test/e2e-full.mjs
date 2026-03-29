@@ -170,11 +170,16 @@ async function F1_Register(browser) {
 
       // Wait for navigation away from auth page
       try {
-        await page.waitForURL(url => !url.toString().includes('auth') || url.pathname === '/', { timeout: 8000 });
+        await page.waitForURL(url => !url.toString().includes('auth') || url.pathname === '/', { timeout: 10000 });
       } catch {
-        // Maybe it navigated to / which still works
+        // Maybe submit didn't fire — try again
+        const retryBtn = await page.$('button[type="submit"]');
+        if (retryBtn) {
+          await retryBtn.click();
+          await page.waitForURL(url => !url.toString().includes('auth') || url.pathname === '/', { timeout: 8000 }).catch(() => {});
+        }
       }
-      await page.waitForTimeout(1500);
+      await page.waitForTimeout(2000);
       await screenshot(page, u.key, 'F1-03-after-register');
 
       // Verify
@@ -417,29 +422,31 @@ async function F5_CreateEvent() {
 
     await screenshot(p, 'carlos', 'F5-02-event-form-basic');
 
-    // Add wines
+    // Add wines using the manual add flow:
+    // 1. Type wine name in search input (placeholder "Search wine with AI...")
+    // 2. Click the "+" button (add manually) next to the search
+    const wineSearchInput = await p.$('input[placeholder*="Search wine" i], input[placeholder*="wine" i]:nth-of-type(2)');
     for (let i = 0; i < WINES.length; i++) {
       const w = WINES[i];
-      const addWineBtn = await p.$('button:has-text("Add Wine"), button:has-text("Add wine"), button:has-text("+ Wine"), button:has-text("Adicionar")');
-      if (addWineBtn) {
-        await addWineBtn.click();
-        await p.waitForTimeout(500);
+      if (wineSearchInput) {
+        await wineSearchInput.fill(`${w.name} - ${w.producer}`);
+        await p.waitForTimeout(300);
       }
-
-      // Fill wine details — try various selectors
-      const wineNameInput = await p.$(`input[placeholder*="wine name" i]:last-of-type, input[name="wineName"]:last-of-type, input[placeholder*="name" i]:nth-of-type(${i + 2})`);
-      if (wineNameInput) await wineNameInput.fill(w.name);
-
-      const producerInput = await p.$('input[placeholder*="producer" i]:last-of-type, input[name="producer"]:last-of-type');
-      if (producerInput) await producerInput.fill(w.producer);
-
-      const regionInput = await p.$('input[placeholder*="region" i]:last-of-type');
-      if (regionInput) await regionInput.fill(w.region);
-
-      const priceInput = await p.$('input[placeholder*="price" i]:last-of-type, input[type="number"]:last-of-type');
-      if (priceInput) await priceInput.fill(String(w.price));
-
+      // Click the manual add button (+)
+      const addManualBtn = await p.$('button[title="Add manually"], button:has-text("+"):not([type="submit"])');
+      if (addManualBtn) {
+        await addManualBtn.click();
+        await p.waitForTimeout(500);
+      } else {
+        // Fallback: try the add icon button (the one with just a "+" material icon)
+        const iconBtns = await p.$$('button.btn-outlined');
+        for (const btn of iconBtns) {
+          const text = await btn.textContent();
+          if (text?.includes('add')) { await btn.click(); await p.waitForTimeout(500); break; }
+        }
+      }
       if (i === 0) await screenshot(p, 'carlos', 'F5-03-first-wine-added');
+      log(`Added wine: ${w.name}`);
     }
 
     await screenshot(p, 'carlos', 'F5-04-all-wines-added');
