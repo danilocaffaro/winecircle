@@ -266,9 +266,10 @@ async function F3_CreateClub() {
     await p.waitForTimeout(1000);
     await screenshot(p, 'carlos', 'F3-01-club-form-empty');
 
-    // Fill club name
-    const nameInput = await p.$('input[placeholder*="name" i], input[name="name"]');
+    // Fill club name — placeholder is "e.g., Confraria do Vinho"
+    const nameInput = await p.$('input[type="text"]');
     if (nameInput) await nameInput.fill('Confraria E2E Test');
+    else log('⚠️ Club name input not found!');
 
     // Fill description
     const descInput = await p.$('textarea, input[placeholder*="description" i], input[name="description"]');
@@ -301,18 +302,38 @@ async function F3_CreateClub() {
 async function F4_JoinClub() {
   console.log('\n👥 F4: JOIN CLUB (5 members)');
 
-  // First, find the club URL from Carlos's perspective
-  const p = contexts.carlos.page;
-  await p.goto(`${BASE}/clubs`, { waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
-  await p.waitForTimeout(1000);
+  // Find the club via PB API (most reliable)
+  let clubId = '';
+  try {
+    const auth = await pbApi('POST', '/api/collections/users/auth-with-password', {
+      identity: 'carlos.e2e@test.example.com', password: 'Test1234!'
+    });
+    const token = auth.data.token;
+    const clubs = await pbApi('GET', '/api/collections/wc_clubs/records?filter=(name~"E2E")', null, token);
+    if (clubs.data.items?.length > 0) {
+      clubId = clubs.data.items[0].id;
+      log(`Found club via API: ${clubId}`);
+    }
+  } catch {}
 
-  // Click on the club
-  const clubLink = await p.$('a:has-text("E2E"), [href*="/clubs/"]');
-  if (clubLink) {
-    await clubLink.click();
-    await p.waitForTimeout(1500);
+  // Fallback: get from Carlos's URL
+  if (!clubId) {
+    const p = contexts.carlos.page;
+    await p.goto(`${BASE}/clubs`, { waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+    await p.waitForTimeout(1000);
+    const clubLink = await p.$('a[href*="/clubs/"]');
+    if (clubLink) {
+      const href = await clubLink.getAttribute('href');
+      clubId = href?.split('/clubs/')[1]?.split('/')[0] || '';
+    }
   }
-  const clubUrl = p.url();
+
+  const clubUrl = `${BASE}/clubs/${clubId}`;
+  
+  // Carlos sees his club
+  const p = contexts.carlos.page;
+  await p.goto(clubUrl, { waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+  await p.waitForTimeout(1000);
   await screenshot(p, 'carlos', 'F4-01-club-detail-owner');
 
   // Each other user joins
@@ -325,13 +346,19 @@ async function F4_JoinClub() {
       await pg.waitForTimeout(1000);
       await screenshot(pg, u.key, 'F4-02-before-join');
 
-      const joinBtn = await pg.$('button:has-text("Join"), button:has-text("Enter"), button:has-text("Entrar")');
+      const joinBtn = await pg.$('button:has-text("Join Club"), button:has-text("Join"), button:has-text("Enter"), button:has-text("Entrar")');
       if (joinBtn) {
         await joinBtn.click();
         await pg.waitForTimeout(1500);
         pass(`${u.name} joined club`);
       } else {
-        log(`${u.name}: No join button (may already be member or auto-joined)`);
+        // Check if page shows "Club not found" or user is already a member
+        const body = await pg.textContent('body').catch(() => '');
+        if (body.includes('not found')) {
+          fail(`${u.name} join club`, 'Club not found');
+        } else {
+          log(`${u.name}: No join button (may already be member)`);
+        }
       }
 
       await screenshot(pg, u.key, 'F4-03-after-join');
@@ -348,23 +375,37 @@ async function F4_JoinClub() {
 // F5: CREATE EVENT — Carlos creates tasting event
 // ═══════════════════════════════════════════
 let eventUrl = '';
+let testClubId = '';
 
 async function F5_CreateEvent() {
   console.log('\n🍷 F5: CREATE EVENT');
   const p = contexts.carlos.page;
 
   try {
-    // Get club ID from current URL
+    // Get club ID from URL or API
     const clubUrl = p.url();
-    const clubId = clubUrl.split('/clubs/')[1]?.split('/')[0] || '';
+    let clubId = clubUrl.split('/clubs/')[1]?.split('/')[0] || '';
+    
+    // If clubId not in URL, find via API
+    if (!clubId || clubId.length < 5) {
+      try {
+        const auth = await pbApi('POST', '/api/collections/users/auth-with-password', {
+          identity: 'carlos.e2e@test.example.com', password: 'Test1234!'
+        });
+        const clubs = await pbApi('GET', '/api/collections/wc_clubs/records?filter=(name~"E2E")', null, auth.data.token);
+        clubId = clubs.data.items?.[0]?.id || '';
+      } catch {}
+    }
+    testClubId = clubId;
 
     await p.goto(`${BASE}/clubs/${clubId}/events/new`, { waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
     await p.waitForTimeout(1000);
     await screenshot(p, 'carlos', 'F5-01-event-form-empty');
 
-    // Fill event name
-    const nameInput = await p.$('input[placeholder*="name" i], input[placeholder*="title" i], input[name="title"], input[name="name"]');
+    // Fill event name — placeholder is "e.g., Friday Night Tasting"
+    const nameInput = await p.$('input[type="text"]');
     if (nameInput) await nameInput.fill('Degustação Malbec E2E');
+    else log('⚠️ Event name input not found!');
 
     // Date
     const dateInput = await p.$('input[type="date"], input[type="datetime-local"]');
