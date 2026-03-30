@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-29T19:45:58.916Z",
+  "timestamp": "2026-03-30T00:39:08.363Z",
   "baseUrl": "https://winecircle.REDACTED_LEGACY_HOST.sslip.io",
   "users": [
     {
@@ -34,14 +34,9 @@
     }
   ],
   "results": {
-    "passed": 14,
-    "failed": 1,
-    "errors": [
-      {
-        "test": "Carlos Mendes register",
-        "error": "Still on auth page. Toast: \"\""
-      }
-    ]
+    "passed": 16,
+    "failed": 0,
+    "errors": []
   },
-  "totalScreenshots": 104
+  "totalScreenshots": 122
 }

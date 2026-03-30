@@ -37,7 +37,7 @@ export const SortableWineCard: React.FC<Props> = ({ wine, index, blind }) => {
             #{index + 1}
           </span>
           <span className="material-symbols-rounded" style={{ fontSize: 18, color: 'var(--md3-on-surface-variant)', marginTop: 4 }}>
-            drag_handle
+            drag_indicator
           </span>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
