@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-03-30T00:46:51.320Z",
-  "baseUrl": "https://winecircle.REDACTED_LEGACY_HOST.sslip.io",
+  "timestamp": "2026-04-09T04:12:34.565Z",
+  "baseUrl": "https://winecircle.melhor.dev",
   "users": [
     {
       "key": "carlos",
@@ -34,7 +34,7 @@
     }
   ],
   "results": {
-    "passed": 16,
+    "passed": 10,
     "failed": 0,
     "errors": []
   },

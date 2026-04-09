@@ -3,3 +3,14 @@
 .env.*
 app/.env
 app/.env.*
+
+# Dependencies & build
+node_modules/
+dist/
+.next/
+build/
+.cache/
+
+# OS
+.DS_Store
+*.log
