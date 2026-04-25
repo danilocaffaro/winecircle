@@ -1,21 +1,20 @@
 #!/bin/bash
-# WineCircle deploy script
-# Usage: ./deploy.sh
+# WineCircle deploy script (Oracle Cloud)
 set -e
 
-APP_DIR="/root/.opencla/winecircle/app"
+APP_DIR="/home/ubuntu/projects/winecircle/app"
 WEB_DIR="/var/www/winecircle"
 
 echo "→ Building..."
 cd "$APP_DIR"
-NODE_ENV=development npm ci --silent 2>/dev/null || true
 npm run build
 
 echo "→ Deploying to $WEB_DIR..."
-rsync -a --delete dist/ "$WEB_DIR/"
-chown -R www-data:www-data "$WEB_DIR"
+sudo rsync -a --delete dist/ "$WEB_DIR/"
+sudo chown -R www-data:www-data "$WEB_DIR" 2>/dev/null || true
 
-echo "→ Reloading nginx..."
-nginx -t && systemctl reload nginx
+echo "→ Verifying..."
+FILE_COUNT=$(find "$WEB_DIR" -type f | wc -l)
+echo "  $FILE_COUNT files deployed"
 
-echo "✅ Done — https://winecircle.REDACTED_LEGACY_HOST.sslip.io"
+echo "✅ Done — https://winecircle.melhor.dev"

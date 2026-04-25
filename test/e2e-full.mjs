@@ -11,9 +11,9 @@ import { chromium } from '/usr/lib/node_modules/playwright/index.mjs';
 import fs from 'fs';
 import path from 'path';
 
-const BASE = 'https://winecircle.REDACTED_LEGACY_HOST.sslip.io';
-const PB = 'https://winecircle.REDACTED_LEGACY_HOST.sslip.io/pb';
-const OUT = '/root/.opencla/winecircle/test/e2e-screenshots';
+const BASE = 'https://winecircle.melhor.dev';
+const PB = 'https://winecircle.melhor.dev/pb';
+const OUT = '/home/ubuntu/projects/winecircle/test/e2e-screenshots';
 const VIEWPORT = { width: 430, height: 932 };
 
 // ─── 6 Test Users ───
