@@ -239,7 +239,7 @@ export const EventForm: React.FC = () => {
         </div>
 
         <button type="submit" disabled={saving} className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)', opacity: saving ? 0.7 : 1 }}>
-          {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Event'}
+          {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Criar Evento'}
         </button>
       </form>
     </div>

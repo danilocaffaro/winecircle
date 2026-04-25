@@ -17,7 +17,7 @@ export const ClubDetail: React.FC = () => {
 
   const currentUser = getCurrentUser();
   const isMember = club && currentUser && (club.members || []).includes(currentUser.id);
-  const isOwner = club && currentUser && club.owner === currentUser.id;
+  const isDono = club && currentUser && club.owner === currentUser.id;
 
   useEffect(() => {
     if (!id) return;
@@ -43,10 +43,10 @@ export const ClubDetail: React.FC = () => {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!club || !confirm('Delete this club? This cannot be undone.')) return;
+    if (!club || !confirm('Excluir este clube? Isso não pode ser desfeito.')) return;
     try {
       await deleteClub(club.id);
-      toast.success('Club deleted');
+      toast.success('Clube excluído');
       navigate('/clubs');
     } catch (e: any) {
       toast.error(e?.data?.message || 'Failed to delete');
@@ -62,7 +62,7 @@ export const ClubDetail: React.FC = () => {
       const memberIds: string[] = updated.members || [];
       const users = await getUsers(memberIds);
       setMembers(users.map(userToMember));
-      toast.success('Welcome to the club!');
+      toast.success('Bem-vindo ao clube!');
     } catch (e: any) {
       toast.error(e?.data?.message || 'Failed to join');
     }
@@ -98,7 +98,7 @@ export const ClubDetail: React.FC = () => {
         Clubs
       </Link>
 
-      {/* Header */}
+      {/* Share invite + Dono actions */}
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0 mr-3">
           <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
@@ -108,27 +108,42 @@ export const ClubDetail: React.FC = () => {
           {club.type && (
             <span className="chip mt-2" style={{ background: 'var(--md-surface-container-highest)', borderColor: 'transparent' }}>
               <span className="material-symbols-rounded" style={{ fontSize: 16 }}>{club.type === 'blind' ? 'visibility_off' : 'visibility'}</span>
-              {club.type === 'blind' ? 'Blind Tastings' : 'Open Tastings'}
+              {club.type === 'blind' ? 'Degustação às cegas' : 'Degustação aberta'}
             </span>
           )}
         </div>
-        {isOwner && (
-          <div className="flex gap-1 shrink-0">
-            <Link to={`/clubs/${club.id}/edit`} className="btn-icon">
-              <span className="material-symbols-rounded">edit</span>
-            </Link>
-            <button onClick={handleDelete} className="btn-icon danger">
-              <span className="material-symbols-rounded">delete</span>
+        <div className="flex gap-1 shrink-0">
+          {isMember && (
+            <button onClick={() => {
+              const url = `${window.location.origin}/join/${club.id}`;
+              if (navigator.share) {
+                navigator.share({ title: `Entrar no ${club.name}`, text: `Venha participar do clube de vinhos ${club.name}!`, url });
+              } else {
+                navigator.clipboard.writeText(url);
+                toast.success('Link copiado!');
+              }
+            }} className="btn-icon">
+              <span className="material-symbols-rounded">share</span>
             </button>
-          </div>
-        )}
+          )}
+          {isDono && (
+            <>
+              <Link to={`/clubs/${club.id}/edit`} className="btn-icon">
+                <span className="material-symbols-rounded">edit</span>
+              </Link>
+              <button onClick={handleDelete} className="btn-icon danger">
+                <span className="material-symbols-rounded">delete</span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Join button if not member */}
       {!isMember && currentUser && (
         <button onClick={handleJoin} className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
           <span className="material-symbols-rounded" style={{ fontSize: 20 }}>person_add</span>
-          Join Club
+          Entrar no Clube
         </button>
       )}
 
@@ -158,7 +173,7 @@ export const ClubDetail: React.FC = () => {
         {members.length === 0 ? (
           <div className="text-center py-6">
             <span className="material-symbols-rounded" style={{ fontSize: 40, color: 'var(--md-outline)' }}>person_off</span>
-            <p className="type-body-medium mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>No members yet</p>
+            <p className="type-body-medium mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>Nenhum membro ainda</p>
           </div>
         ) : (
           <div className="space-y-1">
@@ -181,8 +196,8 @@ export const ClubDetail: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  {isOwner && club.owner === currentUser?.id && member.id === currentUser?.id && (
-                    <span className="chip" style={{ background: 'var(--md-tertiary-container)', color: 'var(--md-on-tertiary-container)', borderColor: 'transparent', height: 24, padding: '0 10px', fontSize: 11 }}>Owner</span>
+                  {isDono && club.owner === currentUser?.id && member.id === currentUser?.id && (
+                    <span className="chip" style={{ background: 'var(--md-tertiary-container)', color: 'var(--md-on-tertiary-container)', borderColor: 'transparent', height: 24, padding: '0 10px', fontSize: 11 }}>Dono</span>
                   )}
                 </div>
               </div>
@@ -195,7 +210,7 @@ export const ClubDetail: React.FC = () => {
       {isMember && (
         <Link to={`/clubs/${club.id}/events/new`} className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
           <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>celebration</span>
-          Create New Event
+          Criar Novo Evento
         </Link>
       )}
 
@@ -210,8 +225,8 @@ export const ClubDetail: React.FC = () => {
         {events.length === 0 ? (
           <div className="card-elevated text-center py-10" style={{ borderRadius: 'var(--shape-extra-large)' }}>
             <span className="material-symbols-rounded" style={{ fontSize: 40, color: 'var(--md-outline)' }}>event_busy</span>
-            <p className="type-body-medium mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>No events yet</p>
-            <p className="type-body-small" style={{ color: 'var(--md-outline)' }}>Create your first tasting event above</p>
+            <p className="type-body-medium mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>Nenhum evento ainda</p>
+            <p className="type-body-small" style={{ color: 'var(--md-outline)' }}>Crie seu primeiro evento acima</p>
           </div>
         ) : (
           <div className="space-y-2">

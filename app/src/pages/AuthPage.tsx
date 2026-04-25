@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 export const AuthPage: React.FC = () => {
   const { login, register } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,18 +18,24 @@ export const AuthPage: React.FC = () => {
     try {
       if (mode === 'login') {
         await login(email, password);
-        toast.success('Welcome back!');
+        toast.success('Bem-vindo de volta!');
       } else {
         if (!displayName.trim()) {
-          toast.error('Please enter your name');
+          toast.error('Digite seu nome');
           setLoading(false);
           return;
         }
         await register(email, password, displayName);
-        toast.success('Account created!');
+        toast.success('Conta criada!');
+      }
+      // Redirect if came from join link
+      const joinRedirect = localStorage.getItem('wc_join_redirect');
+      if (joinRedirect) {
+        localStorage.removeItem('wc_join_redirect');
+        navigate(joinRedirect);
       }
     } catch (err: any) {
-      const msg = err?.data?.message || err?.message || 'Something went wrong';
+      const msg = err?.data?.message || err?.message || 'Algo deu errado';
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -80,7 +88,7 @@ export const AuthPage: React.FC = () => {
               color: mode === m ? 'var(--md-on-primary)' : 'var(--md-on-surface-variant)',
               transition: 'all 0.2s ease',
             }}>
-              {m === 'login' ? 'Sign In' : 'Create Account'}
+              {m === 'login' ? 'Entrar' : 'Criar conta'}
             </button>
           ))}
         </div>
@@ -157,10 +165,10 @@ export const AuthPage: React.FC = () => {
                   width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)',
                   borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block',
                 }} />
-                {mode === 'login' ? 'Signing in...' : 'Creating account...'}
+                {mode === 'login' ? 'Entrando...' : 'Criando conta...'}
               </span>
             ) : (
-              mode === 'login' ? 'Sign In' : 'Create Account'
+              mode === 'login' ? 'Entrar' : 'Criar conta'
             )}
           </button>
         </form>

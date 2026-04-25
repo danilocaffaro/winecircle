@@ -60,7 +60,7 @@ export const ClubForm: React.FC = () => {
           description: description.trim(),
           type: clubType,
         });
-        toast.success('Club created!');
+        toast.success('Clube criado!');
         navigate(`/clubs/${club.id}`);
       }
     } catch (e: any) {
@@ -168,7 +168,7 @@ export const ClubForm: React.FC = () => {
           width: '100%', height: 48, borderRadius: 16, fontSize: 15, fontWeight: 600,
           opacity: saving ? 0.7 : 1,
         }}>
-          {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Club'}
+          {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Criar Clube'}
         </button>
       </form>
     </div>

@@ -29,12 +29,12 @@ export const ProfilePage: React.FC = () => {
   // Compute achievements
   const achievements = useMemo(() => {
     const badges: { icon: string; label: string; desc: string; earned: boolean }[] = [
-      { icon: 'wine_bar', label: 'First Sip', desc: 'Complete your first tasting', earned: completed.length >= 1 },
-      { icon: 'emoji_events', label: 'Sommelier', desc: 'Complete 5 tastings', earned: completed.length >= 5 },
-      { icon: 'local_fire_department', label: 'Wine Streak', desc: 'Complete 10 tastings', earned: completed.length >= 10 },
-      { icon: 'group', label: 'Social Butterfly', desc: 'Join 3 clubs', earned: clubs.length >= 3 },
-      { icon: 'explore', label: 'Explorer', desc: 'Taste 20 different wines', earned: totalWines >= 20 },
-      { icon: 'star', label: 'Connoisseur', desc: 'Taste 50 wines', earned: totalWines >= 50 },
+      { icon: 'wine_bar', label: 'Primeiro Gole', desc: 'Complete sua primeira degustação', earned: completed.length >= 1 },
+      { icon: 'emoji_events', label: 'Sommelier', desc: 'Complete 5 degustações', earned: completed.length >= 5 },
+      { icon: 'local_fire_department', label: 'Sequência', desc: 'Complete 10 degustações', earned: completed.length >= 10 },
+      { icon: 'group', label: 'Sociável', desc: 'Entre em 3 clubes', earned: clubs.length >= 3 },
+      { icon: 'explore', label: 'Explorador', desc: 'Prove 20 vinhos diferentes', earned: totalWines >= 20 },
+      { icon: 'star', label: 'Conhecedor', desc: 'Prove 50 vinhos', earned: totalWines >= 50 },
     ];
     return badges;
   }, [completed.length, clubs.length, totalWines]);
@@ -59,7 +59,7 @@ export const ProfilePage: React.FC = () => {
       await updateProfile({ pix_key: pixKey });
       await refreshUser();
       setEditingPix(false);
-      toast.success('Pix key saved!');
+      toast.success('Chave Pix salva!');
     } catch { toast.error('Failed to save'); }
     finally { setSaving(false); }
   };
@@ -71,14 +71,14 @@ export const ProfilePage: React.FC = () => {
       await updateProfile({ display_name: displayName.trim() });
       await refreshUser();
       setEditingName(false);
-      toast.success('Name updated!');
+      toast.success('Nome atualizado!');
     } catch { toast.error('Failed to save'); }
     finally { setSaving(false); }
   };
 
   const stats = [
-    { label: 'Wines Tasted', value: totalWines, icon: 'wine_bar' },
-    { label: 'Tastings', value: completed.length, icon: 'emoji_events' },
+    { label: 'Vinhos Provados', value: totalWines, icon: 'wine_bar' },
+    { label: 'Degustações', value: completed.length, icon: 'emoji_events' },
     { label: 'Clubs', value: clubs.length, icon: 'group' },
     { label: 'Events', value: events.length, icon: 'event' },
   ];
@@ -136,18 +136,18 @@ export const ProfilePage: React.FC = () => {
               fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 700,
               color: 'var(--md-on-surface)', marginBottom: 4, cursor: 'pointer',
             }}>
-              {user?.display_name || 'Set your name'}
+              {user?.display_name || 'Defina seu nome'}
               <span className="material-symbols-rounded" style={{ fontSize: 16, marginLeft: 6, color: 'var(--md-on-surface-variant)', verticalAlign: 'middle' }}>edit</span>
             </h1>
           )
         ) : (
           <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 26, fontWeight: 700, color: 'var(--md-on-surface)', marginBottom: 4 }}>
-            Guest
+            Visitante
           </h1>
         )}
 
         <p style={{ fontSize: 13, color: 'var(--md-on-surface-variant)', marginBottom: 8 }}>
-          {authenticated ? user?.email : 'Not signed in'}
+          {authenticated ? user?.email : 'Não conectado'}
         </p>
 
         {/* Member since + achievement summary */}
@@ -164,7 +164,7 @@ export const ProfilePage: React.FC = () => {
         <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <span className="pix-badge">PIX</span>
-            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--md-on-surface)' }}>Your Pix Key</span>
+            <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--md-on-surface)' }}>Sua Chave Pix</span>
           </div>
           {editingPix ? (
             <div style={{ display: 'flex', gap: 8 }}>
@@ -207,9 +207,9 @@ export const ProfilePage: React.FC = () => {
           <span className="material-symbols-rounded" style={{ fontSize: 22, color: '#F59E0B' }}>payments</span>
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--md-on-surface)' }}>
-              {pendingCount} pending payment{pendingCount > 1 ? 's' : ''}
+              {pendingCount} pagamento pendente{pendingCount > 1 ? 's' : ''}
             </p>
-            <p style={{ fontSize: 12, color: 'var(--md-on-surface-variant)' }}>Check your expenses to settle up</p>
+            <p style={{ fontSize: 12, color: 'var(--md-on-surface-variant)' }}>Verifique suas despesas</p>
           </div>
         </div>
       )}
@@ -224,7 +224,7 @@ export const ProfilePage: React.FC = () => {
             fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
             transition: 'all 0.2s',
           }}>
-            {tab === 'stats' ? 'Stats' : tab === 'history' ? 'History' : 'Wines'}
+            {tab === 'stats' ? 'Resumo' : tab === 'history' ? 'Histórico' : 'Vinhos'}
           </button>
         ))}
       </div>
@@ -250,10 +250,10 @@ export const ProfilePage: React.FC = () => {
             ))}
           </div>
 
-          {/* Achievements */}
+          {/* Conquistas */}
           <div style={cardStyle}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--md-on-surface)', marginBottom: 16, fontFamily: 'Playfair Display, serif' }}>
-              🏅 Achievements
+              🏅 Conquistas
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               {achievements.map(a => (
@@ -281,11 +281,11 @@ export const ProfilePage: React.FC = () => {
       {activeTab === 'history' && (
         <div style={cardStyle}>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--md-on-surface)', marginBottom: 16, fontFamily: 'Playfair Display, serif' }}>
-            📋 Tasting History
+            📋 Histórico de Degustações
           </h3>
           {completed.length === 0 ? (
             <p style={{ fontSize: 14, color: 'var(--md-on-surface-variant)', textAlign: 'center', padding: 20 }}>
-              No completed tastings yet. Start your first event!
+              Nenhuma degustação concluída ainda. Crie seu primeiro evento!
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -313,7 +313,7 @@ export const ProfilePage: React.FC = () => {
                           {event.name}
                         </p>
                         <p style={{ fontSize: 11, color: 'var(--md-on-surface-variant)' }}>
-                          {club?.name || 'Unknown club'} · {new Date(event.date).toLocaleDateString('pt-BR')} · {event.wines.length} wines
+                          {club?.name || 'Clube desconhecido'} · {new Date(event.date).toLocaleDateString('pt-BR')} · {event.wines.length} wines
                         </p>
                       </div>
                       <span className="material-symbols-rounded" style={{ fontSize: 18, color: 'var(--md-on-surface-variant)' }}>chevron_right</span>
@@ -329,11 +329,11 @@ export const ProfilePage: React.FC = () => {
       {activeTab === 'wines' && (
         <div style={cardStyle}>
           <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--md-on-surface)', marginBottom: 16, fontFamily: 'Playfair Display, serif' }}>
-            🍷 Wine Collection
+            🍷 Coleção de Vinhos
           </h3>
           {allWines.length === 0 ? (
             <p style={{ fontSize: 14, color: 'var(--md-on-surface-variant)', textAlign: 'center', padding: 20 }}>
-              No wines tasted yet. Join a tasting to start!
+              Nenhum vinho provado ainda. Participe de uma degustação!
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -355,7 +355,7 @@ export const ProfilePage: React.FC = () => {
                       {wine.name}
                     </p>
                     <p style={{ fontSize: 11, color: 'var(--md-on-surface-variant)' }}>
-                      {[wine.producer, wine.region, wine.year].filter(Boolean).join(' · ') || 'Unknown origin'}
+                      {[wine.producer, wine.region, wine.year].filter(Boolean).join(' · ') || 'Origem desconhecida'}
                     </p>
                   </div>
                   {wine.tastedCount > 1 && (
@@ -375,8 +375,8 @@ export const ProfilePage: React.FC = () => {
       {/* Quick links */}
       <div style={{ background: 'var(--md-surface-container)', borderRadius: 20, border: '1px solid var(--md-outline-variant)', overflow: 'hidden', marginBottom: 24 }}>
         {[
-          { to: '/clubs', label: 'My Clubs', icon: 'group', count: clubs.length },
-          { to: '/search', label: 'Discover Wines', icon: 'search' },
+          { to: '/clubs', label: 'Meus Clubes', icon: 'group', count: clubs.length },
+          { to: '/search', label: 'Descobrir Vinhos', icon: 'search' },
         ].map((item, i) => (
           <Link key={item.to} to={item.to} style={{
             display: 'flex', alignItems: 'center', gap: 12,
@@ -415,7 +415,7 @@ export const ProfilePage: React.FC = () => {
 
       <div style={{ textAlign: 'center', paddingTop: 32 }}>
         <p style={{ fontSize: 11, color: 'var(--md-on-surface-variant)' }}>Wine Circle v1.2</p>
-        <p style={{ fontSize: 10, color: 'var(--md-on-surface-variant)', opacity: 0.6 }}>Taste, rank, celebrate together</p>
+        <p style={{ fontSize: 10, color: 'var(--md-on-surface-variant)', opacity: 0.6 }}>Deguste, classifique, celebre junto</p>
       </div>
     </div>
   );

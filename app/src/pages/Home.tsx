@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export const Home: React.FC = () => {
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
 
   return (
     <div style={{ paddingBottom: 32 }}>

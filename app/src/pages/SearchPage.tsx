@@ -208,7 +208,7 @@ export const SearchPage: React.FC = () => {
             onChange={e => { setQuery(e.target.value); setShowDropdown(true); setActiveSuggestion(-1); }}
             onFocus={() => setShowDropdown(true)}
             onKeyDown={handleKeyDown}
-            placeholder="Search wines, regions, grapes..."
+            placeholder="Buscar vinhos, regions, grapes..."
             autoComplete="off"
             spellCheck={false}
             style={{

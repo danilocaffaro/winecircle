@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-09T04:12:34.565Z",
+  "timestamp": "2026-04-25T21:21:17.718Z",
   "baseUrl": "https://winecircle.melhor.dev",
   "users": [
     {
@@ -34,9 +34,9 @@
     }
   ],
   "results": {
-    "passed": 10,
+    "passed": 16,
     "failed": 0,
     "errors": []
   },
-  "totalScreenshots": 120
+  "totalScreenshots": 106
 }

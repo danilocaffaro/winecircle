@@ -14,6 +14,7 @@ import { ResultsPage } from './pages/ResultsPage';
 import { ExpensePage } from './pages/ExpensePage';
 import { SearchPage } from './pages/SearchPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { JoinClubPage } from './pages/JoinClubPage';
 import { AuthPage } from './pages/AuthPage';
 import { PushNotificationPrompt } from './hooks/usePushNotifications';
 
@@ -77,6 +78,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/events/:id/expenses" element={<ExpensePage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/join/:id" element={<JoinClubPage />} />
         </Routes>
       </Layout>
       <PushNotificationPrompt />

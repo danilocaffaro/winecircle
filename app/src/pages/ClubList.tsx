@@ -122,7 +122,7 @@ export const ClubList: React.FC = () => {
             }}
           >
             <span className="material-symbols-rounded" style={{ fontSize: 20 }}>add</span>
-            Create Club
+            Criar Clube
           </Link>
 
           <div style={{

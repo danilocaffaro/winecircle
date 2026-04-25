@@ -7,7 +7,7 @@
  * Usage: node test/e2e-full.mjs
  */
 
-import { chromium } from '/usr/lib/node_modules/playwright/index.mjs';
+import { chromium } from '/home/ubuntu/.npm/_npx/e41f203b7505f1fb/node_modules/playwright/index.mjs';
 import fs from 'fs';
 import path from 'path';
 
