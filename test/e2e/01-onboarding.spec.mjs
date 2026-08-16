@@ -13,11 +13,19 @@ test.describe('Cenário 1 — Primeiro acesso', () => {
   test.beforeAll(async () => { await resetDatabase(); });
 
   test('visitante vê a proposta, não um app vazio', async ({ page }) => {
+    // O domínio nu é o link que as pessoas recebem. Ele tinha uma landing
+    // própria, escrita antes do carrossel e nunca removida: quem chegava pelo
+    // link via a versão antiga, dentro do Layout, com a barra Início/Clubes/
+    // Perfil e um "Criar um clube" que — deslogado — batiam todos em /entrar.
+    // O carrossel só aparecia por acidente. Agora a raiz leva a ele.
     await page.goto('/');
-
-    // A landing explica o produto
+    await expect(page).toHaveURL(/\/entrar/);
     await expect(page.getByRole('heading', { name: /Prove o vinho/i })).toBeVisible();
-    await expect(page.getByText(/Todo mundo ordena os vinhos no próprio celular/i)).toBeVisible();
+    await expect(page.getByLabel(/Como o Wine Circle funciona/i)).toBeVisible();
+
+    // Nada de navegação que não leva a lugar nenhum antes de ter conta
+    await expect(page.getByRole('link', { name: /^Clubes$/i })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /^Perfil$/i })).toHaveCount(0);
 
     // Antes, "Browse without account" liberava telas que dependiam de sessão
     // e mostravam listas vazias. Agora rota interna manda para a entrada.

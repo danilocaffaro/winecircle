@@ -135,8 +135,10 @@ test.describe('Cenário 6 — Catálogo local', () => {
   test('a aba Descobrir saiu do ar', async ({ page }) => {
     // Era uma vitrine que não conectava com clube nem evento, e trazia as
     // únicas imagens hotlinkadas de terceiros do app.
+    // Rota morta cai no catch-all. Deslogado, a raiz leva à entrada — o que
+    // importa é que /search não existe mais e o link sumiu da navegação.
     await page.goto('/search');
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).not.toHaveURL(/\/search/);
     await expect(page.getByRole('link', { name: /Descobrir/i })).toHaveCount(0);
   });
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getMyClubs, getEvents, getMyPayments, getCurrentUser } from '../services/pocketbase';
 import { formatBRL, formatEventDate } from '../utils/algorithms';
@@ -7,16 +7,23 @@ import { InstalarApp } from '../components/InstalarApp';
 import type { Club, TastingEvent, Payment } from '../types';
 
 /**
- * Home com dois rostos (A-17).
+ * A home é o painel de quem já entrou. Quem não entrou vai para /entrar.
  *
- * A versão anterior era uma landing estática — herói, "how it works", uma
- * citação — servida igual para quem abria o app pela primeira e pela décima
- * vez. Não mostrava próximo evento, clube nem pagamento pendente, e o botão
- * "Create a Club" levava à listagem em vez do formulário.
+ * Aqui moravam duas apresentações ao mesmo tempo. Esta rota tinha uma landing
+ * própria — herói, "como funciona", uma citação — escrita antes do carrossel.
+ * Quando o carrossel entrou, ele foi para a AuthPage e esta ficou, então o
+ * domínio nu servia a versão antiga e o carrossel só aparecia por acidente,
+ * quando o RequireAuth empurrava alguém para /entrar.
+ *
+ * Pior que a duplicação: a landing antiga vinha dentro do Layout, com a barra
+ * inferior de Início/Clubes/Perfil e um "Criar um clube" que, deslogado,
+ * batiam todos em /entrar. A primeira tela do produto oferecia quatro caminhos
+ * e nenhum deles levava a lugar nenhum.
  */
 export const Home: React.FC = () => {
   const { authenticated } = useAuth();
-  return authenticated ? <Dashboard /> : <Landing />;
+  if (!authenticated) return <Navigate to="/entrar" replace />;
+  return <Dashboard />;
 };
 
 // ── Para quem já entrou ──
@@ -232,90 +239,5 @@ const Dashboard: React.FC = () => {
     </div>
   );
 };
-
-// ── Para quem ainda não entrou ──
-
-const Landing: React.FC = () => (
-  <div style={{ paddingBottom: 32 }}>
-    <div className="fade-in" style={{
-      margin: '0 -16px', padding: '48px 24px 40px',
-      background: 'linear-gradient(160deg, var(--md-primary-container) 0%, var(--md-surface-container-low) 60%)',
-      borderBottom: '1px solid var(--md-outline-variant)',
-      position: 'relative', overflow: 'hidden',
-    }}>
-      <h1 style={{
-        fontFamily: 'Playfair Display, serif', fontSize: 36, fontWeight: 700,
-        lineHeight: 1.15, color: 'var(--md-on-surface)', marginBottom: 12,
-        letterSpacing: '-0.5px',
-      }}>
-        Prove o vinho,<br />
-        <span style={{ color: 'var(--md-primary)' }}>não o rótulo.</span>
-      </h1>
-      <p style={{
-        fontSize: 15, lineHeight: 1.6, color: 'var(--md-on-surface-variant)',
-        marginBottom: 28, maxWidth: 320,
-      }}>
-        Degustações às cegas com os amigos. Cada um avalia no próprio celular,
-        e no fim o app revela o vencedor e divide a conta.
-      </p>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <Link to="/clubs/new" className="btn-primary" style={{ fontWeight: 600, fontSize: 14 }}>
-          <span className="material-symbols-rounded" aria-hidden="true" style={{ fontSize: 18 }}>add</span>
-          Criar um clube
-        </Link>
-      </div>
-    </div>
-
-    <div style={{ marginTop: 32 }} className="fade-in fade-in-delay-1">
-      <p className="section-label" style={{ marginBottom: 20 }}>Como funciona</p>
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {[
-          { n: '01', title: 'Crie seu clube', desc: 'Chame os amigos por um link. Marque a data.', icon: 'group_add' },
-          { n: '02', title: 'Cada um avalia', desc: 'Todo mundo ordena os vinhos no próprio celular, sem ver o rótulo.', icon: 'smartphone' },
-          { n: '03', title: 'Revele e acerte', desc: 'O app apura os votos, mostra o vencedor e divide a conta no Pix.', icon: 'celebration' },
-        ].map((step, i) => (
-          <div key={step.n} style={{
-            display: 'flex', gap: 16, padding: '20px 0',
-            borderBottom: i < 2 ? '1px solid var(--md-outline-variant)' : 'none',
-          }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'var(--md-primary-container)',
-            }}>
-              <span className="material-symbols-rounded ms-filled" aria-hidden="true"
-                style={{ fontSize: 20, color: 'var(--md-on-primary-container)' }}>{step.icon}</span>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
-                <span style={{ fontSize: 11, color: 'var(--md-outline)' }}>{step.n}</span>
-                <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--md-on-surface)' }}>{step.title}</p>
-              </div>
-              <p style={{ fontSize: 14, color: 'var(--md-on-surface-variant)', lineHeight: 1.5 }}>{step.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-
-    <div className="fade-in fade-in-delay-2" style={{
-      marginTop: 32, padding: '24px 20px',
-      background: 'var(--md-surface-container)', borderRadius: 16,
-      border: '1px solid var(--md-outline-variant)',
-    }}>
-      <p style={{
-        fontFamily: 'Playfair Display, serif', fontSize: 20, fontWeight: 600,
-        color: 'var(--md-on-surface)', marginBottom: 8, lineHeight: 1.3,
-      }}>
-        Sem o rótulo, o paladar decide.
-      </p>
-      <p style={{ fontSize: 14, color: 'var(--md-on-surface-variant)', lineHeight: 1.6 }}>
-        Numa degustação às cegas, uma garrafa de R$45 ganha de uma de R$300 com
-        frequência desconfortável. O objetivo do Wine Circle é justamente esse
-        constrangimento — descobrir o que você realmente gosta.
-      </p>
-    </div>
-  </div>
-);
 
 export default Home;
