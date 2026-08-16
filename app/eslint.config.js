@@ -19,5 +19,15 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // react-refresh reclama de arquivos que exportam um componente junto com
+      // um hook ou constante. É uma regra de ergonomia do hot reload, não de
+      // correção — e o padrão contexto + hook (AuthContext/useAuth) é
+      // deliberado. Liberamos os nomes que de fato usamos.
+      'react-refresh/only-export-components': [
+        'error',
+        { allowExportNames: ['useAuth', 'usePushNotifications', 'wineTypeColors'] },
+      ],
+    },
   },
 ])

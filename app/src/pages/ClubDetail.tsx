@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { formatEventDate } from '../utils/algorithms';
 import toast from 'react-hot-toast';
 import {
   getClub, deleteClub, getEvents, joinClub,
-  getCurrentUser, getUsers, userToMember,
+  getCurrentUser, getMembers, describeError,
 } from '../services/pocketbase';
-import type { Member } from '../types';
+import type { Member, Club, TastingEvent } from '../types';
 
 export const ClubDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [club, setClub] = useState<any>(null);
+  const [club, setClub] = useState<Club | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<TastingEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   const currentUser = getCurrentUser();
@@ -28,14 +29,13 @@ export const ClubDetail: React.FC = () => {
         // Resolve members
         const memberIds: string[] = c.members || [];
         if (memberIds.length > 0) {
-          const users = await getUsers(memberIds);
-          setMembers(users.map(userToMember));
+          setMembers(await getMembers(memberIds));
         }
         // Fetch events
         const evts = await getEvents(id);
         setEvents(evts);
-      } catch (e) {
-        console.error('Failed to load club:', e);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -48,8 +48,8 @@ export const ClubDetail: React.FC = () => {
       await deleteClub(club.id);
       toast.success('Clube excluído');
       navigate('/clubs');
-    } catch (e: any) {
-      toast.error(e?.data?.message || 'Failed to delete');
+    } catch (err) {
+      toast.error(describeError(err));
     }
   };
 
@@ -60,11 +60,10 @@ export const ClubDetail: React.FC = () => {
       setClub(updated);
       // Reload members
       const memberIds: string[] = updated.members || [];
-      const users = await getUsers(memberIds);
-      setMembers(users.map(userToMember));
+      setMembers(await getMembers(memberIds));
       toast.success('Bem-vindo ao clube!');
-    } catch (e: any) {
-      toast.error(e?.data?.message || 'Failed to join');
+    } catch (err) {
+      toast.error(describeError(err));
     }
   };
 
@@ -82,8 +81,8 @@ export const ClubDetail: React.FC = () => {
         <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'var(--md-surface-container-highest)' }}>
           <span className="material-symbols-rounded" style={{ fontSize: 32, color: 'var(--md-on-surface-variant)' }}>search_off</span>
         </div>
-        <p className="type-body-medium mb-3" style={{ color: 'var(--md-on-surface-variant)' }}>Club not found</p>
-        <Link to="/clubs" className="btn-text">Back to clubs</Link>
+        <p className="type-body-medium mb-3" style={{ color: 'var(--md-on-surface-variant)' }}>Clube não encontrado</p>
+        <Link to="/clubs" className="btn-text">Voltar aos clubes</Link>
       </div>
     );
   }
@@ -95,7 +94,7 @@ export const ClubDetail: React.FC = () => {
       {/* Back */}
       <Link to="/clubs" className="btn-text inline-flex items-center" style={{ paddingLeft: 0 }}>
         <span className="material-symbols-rounded" style={{ fontSize: 20 }}>arrow_back</span>
-        Clubs
+        Clubes
       </Link>
 
       {/* Share invite + Dono actions */}
@@ -105,12 +104,6 @@ export const ClubDetail: React.FC = () => {
             {club.name}
           </h1>
           {club.description && <p className="type-body-medium mt-1" style={{ color: 'var(--md-on-surface-variant)' }}>{club.description}</p>}
-          {club.type && (
-            <span className="chip mt-2" style={{ background: 'var(--md-surface-container-highest)', borderColor: 'transparent' }}>
-              <span className="material-symbols-rounded" style={{ fontSize: 16 }}>{club.type === 'blind' ? 'visibility_off' : 'visibility'}</span>
-              {club.type === 'blind' ? 'Degustação às cegas' : 'Degustação aberta'}
-            </span>
-          )}
         </div>
         <div className="flex gap-1 shrink-0">
           {isMember && (
@@ -152,7 +145,7 @@ export const ClubDetail: React.FC = () => {
         <div className="grid grid-cols-2 gap-3">
           <div className="card-filled p-4 text-center" style={{ borderRadius: 'var(--shape-large)' }}>
             <p className="type-display-small font-bold" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-primary)' }}>{completedEvents.length}</p>
-            <p className="type-label-small mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>Tastings</p>
+            <p className="type-label-small mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>Degustações</p>
           </div>
           <div className="card-filled p-4 text-center" style={{ borderRadius: 'var(--shape-large)' }}>
             <p className="type-display-small font-bold" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-primary)' }}>{members.length}</p>
@@ -166,7 +159,7 @@ export const ClubDetail: React.FC = () => {
         <div className="flex items-center gap-2 mb-3">
           <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20, color: 'var(--md-primary)' }}>group</span>
           <h2 className="type-title-medium" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
-            Members ({members.length})
+            Membros ({members.length})
           </h2>
         </div>
 
@@ -219,7 +212,7 @@ export const ClubDetail: React.FC = () => {
         <div className="flex items-center gap-2 mb-3">
           <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20, color: 'var(--md-primary)' }}>event</span>
           <h2 className="type-title-medium" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
-            Events ({events.length})
+            Eventos ({events.length})
           </h2>
         </div>
         {events.length === 0 ? (
@@ -230,7 +223,7 @@ export const ClubDetail: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-2">
-            {events.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event: any) => {
+            {events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event) => {
               const status = event.status || 'upcoming';
               const icon = status === 'completed' ? 'emoji_events' : status === 'tasting' ? 'wine_bar' : 'event_note';
               const iconColor = status === 'completed' ? 'var(--md-tertiary)' : status === 'tasting' ? 'var(--md-secondary)' : 'var(--md-on-surface-variant)';
@@ -245,11 +238,11 @@ export const ClubDetail: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <p className="type-title-small truncate" style={{ color: 'var(--md-on-surface)' }}>{event.title}</p>
                     <p className="type-body-small mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>
-                      {new Date(event.date).toLocaleDateString('pt-BR')} · {event.type === 'blind' ? 'Blind' : 'Open'} · {(event.wines || []).length} wines
+                      {formatEventDate(event.date)} · {event.type === 'blind' ? 'às cegas' : 'aberta'} · {(event.wines || []).length} vinhos
                     </p>
                   </div>
                   <span className="chip chip-selected type-label-small shrink-0" style={{ height: 24, padding: '0 10px', background: `color-mix(in srgb, ${iconColor} 15%, transparent)`, borderColor: 'transparent', color: iconColor }}>
-                    {status}
+                    {status === 'completed' ? 'concluído' : status === 'tasting' ? 'em andamento' : 'marcado'}
                   </span>
                 </Link>
               );

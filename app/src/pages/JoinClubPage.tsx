@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getClub, joinClub, getCurrentUser } from '../services/pocketbase';
+import { getClub, joinClub, getCurrentUser, describeError } from '../services/pocketbase';
+import type { Club } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
 export const JoinClubPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { authenticated } = useAuth();
-  const [club, setClub] = useState<any>(null);
+  const [club, setClub] = useState<Club | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
@@ -28,8 +29,8 @@ export const JoinClubPage: React.FC = () => {
       await joinClub(id);
       toast.success('Bem-vindo ao clube! 🍷');
       navigate(`/clubs/${id}`);
-    } catch (e: any) {
-      toast.error(e?.data?.message || 'Erro ao entrar no clube');
+    } catch (err) {
+      toast.error(describeError(err));
     } finally {
       setJoining(false);
     }
@@ -113,7 +114,6 @@ export const JoinClubPage: React.FC = () => {
         )}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, fontSize: 13, color: 'var(--md-on-surface-variant)' }}>
           <span>👥 {memberCount} {memberCount === 1 ? 'membro' : 'membros'}</span>
-          {club.type && <span>🍷 {club.type === 'blind' ? 'Degustação às cegas' : 'Degustação aberta'}</span>}
         </div>
       </div>
 
@@ -122,11 +122,7 @@ export const JoinClubPage: React.FC = () => {
           <p style={{ fontSize: 14, color: 'var(--md-on-surface-variant)', marginBottom: 16 }}>
             Faça login ou crie uma conta para entrar no clube.
           </p>
-          <button onClick={() => {
-            localStorage.setItem('wc_join_redirect', `/join/${id}`);
-            localStorage.removeItem('wc_skip_auth');
-            window.location.href = '/';
-          }} style={{
+          <button onClick={() => navigate('/entrar', { state: { from: `/join/${id}` } })} style={{
             width: '100%', padding: '14px 0', borderRadius: 'var(--shape-full)',
             background: 'var(--md-primary)', border: 'none',
             color: 'var(--md-on-primary)', fontSize: 15, fontWeight: 600,

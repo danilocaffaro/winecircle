@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { savePushSubscription } from '../services/pocketbase';
@@ -7,14 +7,11 @@ const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
 export const usePushNotifications = () => {
   const { authenticated } = useAuth();
-  const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(
+    () => ('Notification' in window ? Notification.permission : 'unsupported'),
+  );
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
 
-  useEffect(() => {
-    if ('Notification' in window) {
-      setPermission(Notification.permission);
-    }
-  }, []);
 
   const requestPermission = async () => {
     if (!('Notification' in window)) {

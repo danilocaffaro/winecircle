@@ -2,10 +2,9 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 const sidebarItems = [
-  { to: '/',        label: 'Home',     icon: 'home' },
-  { to: '/search',  label: 'Discover', icon: 'search' },
-  { to: '/clubs',   label: 'My Clubs', icon: 'group' },
-  { to: '/profile', label: 'Profile',  icon: 'person' },
+  { to: '/',        label: 'Início',     icon: 'home' },
+  { to: '/clubs',   label: 'Meus clubes', icon: 'group' },
+  { to: '/profile', label: 'Perfil',  icon: 'person' },
 ];
 
 export const DesktopSidebar: React.FC = () => {

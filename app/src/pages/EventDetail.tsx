@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { formatEventDate } from '../utils/algorithms';
 import toast from 'react-hot-toast';
-import { getEvent, getClub, updateEvent, getUsers, userToMember } from '../services/pocketbase';
+import { getEvent, getClub, updateEvent, getMembers, describeError } from '../services/pocketbase';
 import { WineCard } from '../components/WineCard';
-import type { Member } from '../types';
+import type { Member, Club, TastingEvent } from '../types';
 
 export const EventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [event, setEvent] = useState<any>(null);
-  const [club, setClub] = useState<any>(null);
+  const [event, setEvent] = useState<TastingEvent | null>(null);
+  const [club, setClub] = useState<Club | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,11 +25,10 @@ export const EventDetail: React.FC = () => {
         // Resolve participants
         const participantIds: string[] = evt.participants || [];
         if (participantIds.length > 0) {
-          const users = await getUsers(participantIds);
-          setMembers(users.map(userToMember));
+          setMembers(await getMembers(participantIds));
         }
-      } catch (e) {
-        console.error('Failed to load event:', e);
+      } catch {
+        // estado de erro tratado abaixo
       } finally {
         setLoading(false);
       }
@@ -39,10 +39,10 @@ export const EventDetail: React.FC = () => {
     if (!event) return;
     try {
       await updateEvent(event.id, { status: 'tasting' });
-      toast.success('Tasting started!');
+      toast.success('Degustação iniciada!');
       navigate(`/events/${event.id}/tasting`);
-    } catch (e: any) {
-      toast.error('Failed to start tasting');
+    } catch (err) {
+      toast.error(describeError(err));
     }
   };
 
@@ -60,8 +60,8 @@ export const EventDetail: React.FC = () => {
         <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'var(--md-surface-container-highest)' }}>
           <span className="material-symbols-rounded" style={{ fontSize: 32, color: 'var(--md-on-surface-variant)' }}>error_outline</span>
         </div>
-        <p className="type-body-medium mb-3" style={{ color: 'var(--md-on-surface-variant)' }}>Event not found</p>
-        <Link to="/clubs" className="btn-text">Back to clubs</Link>
+        <p className="type-body-medium mb-3" style={{ color: 'var(--md-on-surface-variant)' }}>Evento não encontrado</p>
+        <Link to="/clubs" className="btn-text">Voltar aos clubes</Link>
       </div>
     );
   }
@@ -86,12 +86,12 @@ export const EventDetail: React.FC = () => {
           <div className="flex items-center gap-2 mt-1">
             <span className="material-symbols-rounded" style={{ fontSize: 16, color: 'var(--md-on-surface-variant)' }}>event</span>
             <span className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
-              {new Date(event.date).toLocaleDateString('pt-BR')}
+              {formatEventDate(event.date)}
             </span>
             <span style={{ color: 'var(--md-outline)' }}>·</span>
             <span className="flex items-center gap-1 type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
               <span className="material-symbols-rounded" style={{ fontSize: 16 }}>{event.type === 'blind' ? 'visibility_off' : 'visibility'}</span>
-              {event.type === 'blind' ? 'Blind' : 'Open'}
+              {event.type === 'blind' ? 'às cegas' : 'aberta'}
             </span>
           </div>
         </div>
@@ -104,7 +104,7 @@ export const EventDetail: React.FC = () => {
                  'var(--md-on-surface-variant)',
           borderColor: 'transparent',
         }}>
-          {status}
+          {status === 'completed' ? 'concluído' : status === 'tasting' ? 'em andamento' : 'marcado'}
         </span>
       </div>
 
@@ -113,7 +113,7 @@ export const EventDetail: React.FC = () => {
         <div className="flex items-center gap-2 mb-3">
           <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20, color: 'var(--md-primary)' }}>group</span>
           <h2 className="type-title-medium" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
-            Participants ({members.length})
+            Participantes ({members.length})
           </h2>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -134,11 +134,11 @@ export const EventDetail: React.FC = () => {
         <div className="flex items-center gap-2 mb-3">
           <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20, color: 'var(--md-primary)' }}>wine_bar</span>
           <h2 className="type-title-medium" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
-            Wines ({wines.length})
+            Vinhos ({wines.length})
           </h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {wines.map((wine: any, i: number) => (
+          {wines.map((wine, i) => (
             <WineCard
               key={wine.id}
               wine={wine}
@@ -153,13 +153,13 @@ export const EventDetail: React.FC = () => {
       <div className="space-y-3">
         {status === 'upcoming' && (
           <>
-            <button onClick={startTasting} className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
+            <button onClick={startTasting} data-testid="start-tasting" className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
               <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>wine_bar</span>
-              Start Tasting
+              Iniciar degustação
             </button>
             <Link to={`/events/${event.id}/edit`} className="btn-outlined w-full flex items-center justify-center" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
               <span className="material-symbols-rounded" style={{ fontSize: 20 }}>edit</span>
-              Edit Event
+              Editar evento
             </Link>
           </>
         )}
@@ -167,7 +167,7 @@ export const EventDetail: React.FC = () => {
         {status === 'tasting' && (
           <Link to={`/events/${event.id}/tasting`} className="btn-primary w-full flex items-center justify-center" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
             <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>wine_bar</span>
-            Continue Tasting
+            Continuar degustação
           </Link>
         )}
 
@@ -175,11 +175,11 @@ export const EventDetail: React.FC = () => {
           <>
             <Link to={`/events/${event.id}/results`} className="btn-primary w-full flex items-center justify-center" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
               <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>emoji_events</span>
-              View Results
+              Ver resultado
             </Link>
             <Link to={`/events/${event.id}/expenses`} className="btn-tonal w-full flex items-center justify-center" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
               <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>payments</span>
-              Manage Expenses
+              Dividir a conta
             </Link>
           </>
         )}

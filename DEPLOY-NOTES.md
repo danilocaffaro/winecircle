@@ -1,56 +1,172 @@
-# WineCircle Deployment Notes
+# Wine Circle — operação
 
-## Infrastructure (Oracle Cloud)
-- **Frontend**: React/Vite SPA at `/var/www/winecircle`
-- **Backend**: PocketBase 0.36.8 at `localhost:8090`
-- **Reverse Proxy**: Caddy (port 80)
-- **DNS/Tunnel**: Cloudflare tunnel → `winecircle.melhor.dev`
-- **URL**: https://winecircle.melhor.dev
+## Infraestrutura
 
-## Caddy Configuration
-Routes:
-- `/pb/api/*` → strip `/pb` prefix → `localhost:8090` (PocketBase SDK uses /pb prefix)
-- `/api/*` → `localhost:8090` (direct API access)
-- `/*` → SPA with `try_files` fallback to `index.html`
+- **Frontend**: SPA React/Vite servida estaticamente de `/var/www/winecircle`
+- **Backend**: PocketBase 0.36.8 em `127.0.0.1:8090` (`winecircle-pb.service`)
+- **Proxy**: Caddy
+- **DNS**: Cloudflare Tunnel → https://winecircle.melhor.dev
 
-## PocketBase Security Rules (2026-04-09)
+## Schema: migrations, não cliques
 
-### Users
-- authRule: "" (anyone can authenticate)
-- createRule: "" (anyone can register)
-- listRule: id = @request.auth.id (own profile only)
-- viewRule: id = @request.auth.id
-- updateRule: id = @request.auth.id
-- deleteRule: id = @request.auth.id
+O schema do PocketBase é **código versionado** em `pb_migrations/`. O PocketBase
+aplica o que estiver pendente ao iniciar.
 
-### wc_clubs
-- listRule/viewRule: @request.auth.id != "" (discovery)
-- createRule/updateRule/deleteRule: @request.auth.id != ""
+Isso mudou depois de um episódio caro: o schema em produção só existia dentro da
+instância, editado à mão pelo painel, e tinha divergido do que o app gravava. O
+campo `participants` de `wc_events` nunca existiu — o PocketBase descarta chaves
+desconhecidas em silêncio — então todo evento nascia sem participantes e o ciclo
+inteiro (degustação → resultado → conta) abria vazio. Os scripts de setup que
+existiam no repositório não conseguiam reproduzir o ambiente.
 
-### wc_events
-- listRule/viewRule: club.members.id ?= @request.auth.id (members only)
-- createRule/updateRule/deleteRule: @request.auth.id != ""
+Para alterar o schema:
 
-### wc_ratings
-- listRule/viewRule: event.club.members.id ?= @request.auth.id
-- createRule/updateRule/deleteRule: @request.auth.id != ""
+```bash
+# 1. escreva a migration em pb_migrations/<timestamp>_descricao.js
+# 2. valide localmente
+npm run pb:test
+# 3. envie e reinicie
+scp pb_migrations/<arquivo>.js oracle:/home/ubuntu/pocketbase/pb_migrations/
+ssh oracle 'sudo systemctl restart winecircle-pb.service'
+```
 
-### wc_expenses
-- listRule/viewRule: event.club.members.id ?= @request.auth.id
-- createRule/updateRule/deleteRule: @request.auth.id != ""
+Se você editar algo pelo painel de administração, o PocketBase gera a migration
+correspondente em `pb_migrations/` no servidor — **traga o arquivo para o
+repositório**, senão a divergência recomeça.
 
-### wc_payments (PIX key protection)
-- listRule/viewRule: @request.auth.id = debtor || @request.auth.id = creditor
-- createRule/updateRule/deleteRule: @request.auth.id != ""
+## Hooks
 
-### wc_push_subs
-- listRule/viewRule: @request.auth.id = user
-- createRule/updateRule/deleteRule: @request.auth.id != ""
+`pb_hooks/` é sincronizado para `/home/ubuntu/pocketbase/pb_hooks/`. O PocketBase
+observa o diretório e reinicia sozinho ao detectar mudança.
 
-## Admin Credentials
-- Email: admin@winecircle.local
-- Password: (in vault)
+| Arquivo | O que faz |
+|---|---|
+| `club_membership.pb.js` | `POST /api/wc/join` e `/leave` — entrar num clube sem dar permissão de escrita no clube inteiro |
+| `wine_search.pb.js` | `/api/wc/wine-suggest` e `/wine-resolve` — catálogo primeiro, LLM só no que faltar |
+| `llm_provider.js` | Provedor plugável (qualquer endpoint compatível com OpenAI) |
+| `expense_settle.pb.js` | Reconcilia `wc_payments` a partir do rateio da despesa |
+| `payment_pix.pb.js` | Preenche a chave Pix do credor no pagamento |
+| `payment_push.pb.js` | Enfileira notificações de mudança de status |
+| `capabilities.pb.js` | `GET /api/wc/capabilities` — diz ao cliente se a busca por IA está disponível |
+| `lib_settle.js` | Módulo compartilhado (não é `.pb.js`, logo não é carregado como hook) |
 
-## Known Issues
-- Material Symbols font may show text instead of icons (Cloudflare cache)
-- ServiceWorker registration may fail on first load (sw.js caching)
+**Armadilha do JSVM:** cada handler roda em escopo isolado e não enxerga funções
+declaradas no topo do arquivo. Lógica compartilhada precisa vir de um
+`require()`. Campos `json` chegam como raw — é preciso `JSON.parse`. E
+`onRecord*Request` só dispara em requisição HTTP; para gravações internas via
+`app.save()`, use os hooks de modelo (`onRecordCreate`).
+
+## Segredos
+
+Nada secreto entra no bundle. Tudo que começa com `VITE_` é injetado no
+JavaScript entregue ao browser — `app/.env.production` contém apenas a URL do
+backend e a chave VAPID **pública**.
+
+**Hoje não há nenhuma chave de API em uso.** O catálogo local de ~245 mil
+vinhos cobre autocomplete e preenchimento automático sem tocar em serviço
+externo — era esse o único uso da chave do Gemini que ficou pública no bundle.
+
+Se um dia quiser resolver vinhos fora do catálogo, `/home/ubuntu/pocketbase/wc.env`
+(modo 600) aceita qualquer endpoint compatível com a API da OpenAI:
+
+```
+WC_LLM_BASE_URL=http://127.0.0.1:8787/v1   # OmniRoute local, ou
+WC_LLM_BASE_URL=https://api.groq.com/openai/v1
+WC_LLM_API_KEY=...
+WC_LLM_MODEL=llama-3.3-70b-versatile
+```
+
+O que a IA resolve é **gravado de volta no catálogo** (`source='ai'`), então
+cada vinho custa no máximo uma chamada — e o catálogo aprende com o que o
+grupo bebe, que é a única atualização que importa: as fontes abertas param
+em 2019.
+
+O CI falha se um padrão de chave de API aparecer no `dist/`.
+
+A senha do superusuário do PocketBase fica em `/opt/sharevault/winecircle.env`
+(modo 600), rotacionada em 15/08/2026 — a anterior estava em texto plano no
+repositório.
+
+## Painel de administração
+
+**Não é acessível publicamente** — `/pb/_/` responde 403 no Caddy. Para
+administrar, use um túnel:
+
+```bash
+ssh -L 8090:127.0.0.1:8090 oracle
+```
+
+E abra http://localhost:8090/_/
+
+## Deploy
+
+Automático não está ligado: `deploy.yml` roda por `workflow_dispatch`. O CI
+(build + lint + type check + 64 cenários de UI) roda em todo push e PR.
+
+```bash
+gh workflow run deploy.yml
+```
+
+Ou manualmente, a partir da máquina de desenvolvimento:
+
+```bash
+cd app && npm run build
+rsync -az --delete dist/ oracle:/tmp/winecircle-staging/
+ssh oracle 'sudo /usr/local/bin/winecircle-deploy-activate.sh'
+```
+
+## Backup
+
+O `pb_data` inteiro cabe em poucas centenas de KB:
+
+```bash
+ssh oracle 'tar czf /home/ubuntu/backups/pb_data-$(date +%Y%m%d-%H%M%S).tar.gz \
+  -C /home/ubuntu/pocketbase pb_data'
+```
+
+Vale automatizar num cron antes do próximo ciclo de mudanças.
+
+## Catálogo de vinhos
+
+`wc_wine_catalog` — 244.577 vinhos, união de duas fontes abertas. Não vem de
+migration (grande demais): a migration cria a collection, o conteúdo entra por
+
+```bash
+# PocketBase precisa estar PARADO
+node scripts/importar-catalogo.mjs catalogo.jsonl pb_data/data.db
+```
+
+Busca por substring sobre a coluna `search` (minúscula, sem acento): ~25 ms em
+245 mil linhas. Licenças: a parte `we` é CC BY-NC-SA (**não comercial**), a
+parte `rt` é CC BY 4.0. Se o Wine Circle virar produto pago, a parte `we` sai.
+
+## Regras de acesso
+
+Definidas em `pb_migrations/1786794204_lock_write_rules.js`. O princípio:
+**escrita é do dono, leitura é de quem participa.**
+
+| Collection | Ler | Escrever |
+|---|---|---|
+| `wc_clubs` | qualquer autenticado (o convite precisa mostrar o clube) | só o dono |
+| `wc_events` | membros do clube | quem criou |
+| `wc_ratings` | membros do clube | só as próprias notas |
+| `wc_expenses` | membros do clube | quem lançou |
+| `wc_payments` | devedor e credor | devedor e credor (status); criação por quem lançou |
+| `wc_push_subs` | o próprio | o próprio |
+| `wc_profiles` | qualquer autenticado | view, somente leitura |
+
+`wc_profiles` é uma view sobre `users` expondo apenas `id`, `display_name` e
+`avatar_url`. A collection `users` continua fechada em `id = @request.auth.id`,
+então e-mail e chave Pix não vazam. A chave chega a quem precisa por outro
+caminho: o servidor copia a do credor para o registro de pagamento, que só
+devedor e credor leem.
+
+## Conhecido / pendente
+
+- Cache do Cloudflare: o token disponível é só de analytics e não purga. O
+  service worker é registrado como `/sw.js?v=N` (ver `SW_VERSION` em
+  `app/src/App.tsx`) justamente por isso — **suba o número ao mexer em sw.js**.
+- O link de convite é o próprio id do clube, visível a qualquer autenticado que
+  liste os clubes. Um token de convite tornaria o link um segredo de verdade.
+- Push notifications não são cobertas por teste automatizado.
+- Backup do `pb_data` ainda é manual.

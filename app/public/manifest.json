@@ -1,28 +1,67 @@
 {
+  "id": "winecircle-pwa",
   "name": "Wine Circle",
-  "short_name": "WineCircle",
-  "description": "Taste together, discover more — blind wine tasting with friends",
+  "short_name": "Wine Circle",
+  "description": "Degustações às cegas com os amigos: cada um avalia no próprio celular, o app apura o vencedor e divide a conta.",
+  "lang": "pt-BR",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#FFFBFF",
   "theme_color": "#9C404C",
+  "categories": ["food", "social", "lifestyle"],
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icon-192.v2.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icon-512.v2.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.v2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "categories": ["food", "social", "lifestyle"],
-  "lang": "pt-BR",
-  "scope": "/",
-  "id": "winecircle-pwa"
+  "screenshots": [
+    {
+      "src": "/screenshots/degustacao.v2.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Cada participante ordena os vinhos no próprio celular, sem ver o rótulo"
+    },
+    {
+      "src": "/screenshots/resultado.v2.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "O app apura os votos e revela o vencedor"
+    },
+    {
+      "src": "/screenshots/conta.v2.png",
+      "sizes": "780x1688",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "A conta é dividida e cada um vê quanto deve, com a chave Pix"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Meus clubes",
+      "short_name": "Clubes",
+      "url": "/clubs",
+      "icons": [{ "src": "/icon-192.v2.png", "sizes": "192x192" }]
+    }
+  ]
 }

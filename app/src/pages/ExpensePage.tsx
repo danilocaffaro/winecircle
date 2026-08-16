@@ -1,405 +1,451 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { calculateExpenseSplits } from '../utils/algorithms';
-import { useAuth } from '../contexts/AuthContext';
+import { calculateTransfers, formatBRL } from '../utils/algorithms';
 import {
-  getEvent as getEventPB, getClub as getClubPB,
-  createExpense, createPayments,
-  markAsPaid, confirmPayment, disputePayment,
-  pb, getCurrentUser, getUsers, userToMember,
+  pb, getEvent, getMembers, getEventExpense, getEventPayments, saveExpense,
+  markAsPaid, confirmPayment, disputePayment, getCurrentUser, describeError,
 } from '../services/pocketbase';
-import type { Payment, ExpenseSplit, Member } from '../types';
+import type {
+  TastingEvent, Member, Payment, PaymentStatus, Contribution, Expense,
+} from '../types';
 
-type PaymentStatus = 'pending' | 'paid' | 'confirmed' | 'disputed';
-
-interface PaymentRecord {
-  id: string;
-  debtor: string;
-  creditor: string;
-  amount: number;
-  status: PaymentStatus;
-  pix_key?: string;
-  paid_at?: string;
-  confirmed_at?: string;
-  expand?: { debtor?: any; creditor?: any };
-}
-
-const STATUS_CONFIG: Record<PaymentStatus, { label: string; icon: string; color: string; bg: string }> = {
-  pending:   { label: 'Pending',   icon: 'schedule',       color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
-  paid:      { label: 'Paid',      icon: 'check',          color: '#32BCAD', bg: 'rgba(50,188,173,0.12)' },
-  confirmed: { label: 'Confirmed', icon: 'check_circle',   color: '#2E7D32', bg: 'rgba(46,125,50,0.12)' },
-  disputed:  { label: 'Disputed',  icon: 'error_outline',  color: 'var(--md-error)', bg: 'rgba(186,26,26,0.12)' },
+const STATUS: Record<PaymentStatus, { label: string; icon: string; color: string; bg: string }> = {
+  pending:   { label: 'Pendente',   icon: 'schedule',      color: '#B0651A', bg: 'rgba(176,101,26,0.12)' },
+  paid:      { label: 'Pago',       icon: 'check',         color: '#1F8A7C', bg: 'rgba(31,138,124,0.12)' },
+  confirmed: { label: 'Confirmado', icon: 'check_circle',  color: '#2E7D32', bg: 'rgba(46,125,50,0.12)' },
+  disputed:  { label: 'Contestado', icon: 'error_outline', color: 'var(--md-error)', bg: 'rgba(186,26,26,0.12)' },
 };
 
+/**
+ * Divisão de contas persistente (A-07, A-08).
+ *
+ * A versão anterior guardava total, contribuições e o flag `calculated` só em
+ * useState, e o painel de transferências só renderizava sob `calculated`. Ou
+ * seja: existia apenas na sessão em que alguém digitou os valores. Quem abria
+ * o link depois — justamente o devedor — via um formulário vazio e não tinha
+ * como marcar "paguei". E cada clique em calcular criava despesa e pagamentos
+ * novos, duplicando tudo.
+ *
+ * Agora a despesa é carregada do backend no mount, é uma por evento, e a
+ * reconciliação preserva o status de quem já pagou.
+ */
 export const ExpensePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { authenticated } = useAuth();
-  const currentUser = getCurrentUser();
+  const me = getCurrentUser();
 
-  const [event, setEvent] = useState<any>(null);
-  const [club, setClub] = useState<any>(null);
+  const [event, setEvent] = useState<TastingEvent | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  const [expense, setExpense] = useState<Expense | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const [totalCost, setTotalCost] = useState(0);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [calculated, setCalculated] = useState(false);
-  const [paymentRecords, setPaymentRecords] = useState<PaymentRecord[]>([]);
-  const [syncing, setSyncing] = useState(false);
+  const [contributions, setContributions] = useState<Contribution[]>([]);
 
-  // Load event + club + members from PB
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!id) return;
-    (async () => {
-      try {
-        const evt = await getEventPB(id);
-        setEvent(evt);
-        const c = await getClubPB(evt.club);
-        setClub(c);
-        const participantIds: string[] = evt.participants || [];
-        if (participantIds.length > 0) {
-          const users = await getUsers(participantIds);
-          const m = users.map(userToMember);
-          setMembers(m);
-          setPayments(m.map(member => ({ memberId: member.id, amount: 0 })));
-        }
-      } catch (e) {
-        console.error('Failed to load expense data:', e);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    const evt = await getEvent(id);
+    setEvent(evt);
+    const ids = evt.participants || [];
+    const mem = await getMembers(ids);
+    setMembers(mem);
+
+    const exp = await getEventExpense(id);
+    setExpense(exp);
+
+    if (exp) {
+      setTotalCost(exp.total_amount);
+      const saved = exp.splits?.contributions || [];
+      // Reidrata as contribuições salvas, completando quem entrou depois.
+      setContributions(ids.map((memberId) => ({
+        memberId,
+        amount: saved.find((c) => c.memberId === memberId)?.amount ?? 0,
+      })));
+      setPayments(await getEventPayments(id));
+    } else {
+      setContributions(ids.map((memberId) => ({ memberId, amount: 0 })));
+      setEditing(true); // ainda não existe despesa: já abre no formulário
+    }
   }, [id]);
 
-  // Load payment records from PocketBase when authenticated
-  const loadPaymentRecords = useCallback(async () => {
-    if (!authenticated || !id) return;
-    try {
-      const records = await pb.collection('wc_payments').getFullList({
-        filter: `expense.event = "${id}"`,
-        expand: 'debtor,creditor',
-        sort: '-created',
-      });
-      setPaymentRecords(records as unknown as PaymentRecord[]);
-    } catch {
-      // Silently fail — may not have PB expense records yet
-    }
-  }, [authenticated, id]);
-
-  useEffect(() => { loadPaymentRecords(); }, [loadPaymentRecords]);
-
-  // Realtime subscription for payment updates
   useEffect(() => {
-    if (!authenticated) return;
-    pb.collection('wc_payments').subscribe('*', () => {
-      loadPaymentRecords();
-    });
-    return () => { pb.collection('wc_payments').unsubscribe(); };
-  }, [authenticated, loadPaymentRecords]);
+    let cancelled = false;
+    (async () => {
+      try { await load(); }
+      catch (err) { if (!cancelled) setLoadError(describeError(err)); }
+      finally { if (!cancelled) setLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [load]);
+
+  // Status de pagamento ao vivo: você vê o outro confirmar sem recarregar.
+  useEffect(() => {
+    if (!id || !me) return;
+    let unsub: (() => void) | undefined;
+    pb.collection('wc_payments')
+      .subscribe('*', () => { getEventPayments(id).then(setPayments).catch(() => {}); })
+      .then((fn) => { unsub = fn; })
+      .catch(() => {});
+    return () => { unsub?.(); };
+  }, [id, me]);
+
+  const totalPaid = useMemo(
+    () => contributions.reduce((s, c) => s + c.amount, 0),
+    [contributions],
+  );
+  const balanced = Math.abs(totalPaid - totalCost) < 0.01;
+  const sharePerPerson = members.length > 0 ? totalCost / members.length : 0;
+  const nameOf = (memberId: string) =>
+    members.find((m) => m.id === memberId)?.name || 'Participante';
+
+  const updateContribution = (memberId: string, amount: number) =>
+    setContributions((prev) => prev.map((c) => (c.memberId === memberId ? { ...c, amount } : c)));
+
+  const handleSave = async () => {
+    if (!id) return;
+    if (totalCost <= 0) { toast.error('Informe o valor total da conta'); return; }
+    if (members.length === 0) { toast.error('Este evento não tem participantes'); return; }
+    if (!balanced) {
+      toast.error(`A soma do que cada um pagou (${formatBRL(totalPaid)}) precisa bater com o total (${formatBRL(totalCost)})`);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const memberIds = members.map((m) => m.id);
+      const transfers = calculateTransfers(memberIds, totalCost, contributions);
+      await saveExpense(id, totalCost, contributions, transfers);
+      await load();
+      setEditing(false);
+      toast.success('Divisão salva!');
+    } catch (err) {
+      toast.error(describeError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const act = async (fn: () => Promise<unknown>, ok: string) => {
+    try {
+      await fn();
+      if (id) setPayments(await getEventPayments(id));
+      toast.success(ok);
+    } catch (err) {
+      toast.error(describeError(err));
+    }
+  };
 
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-        <div className="w-8 h-8 border-3 border-current/30 border-t-current rounded-full animate-spin" style={{ color: 'var(--dp-gold)' }} />
+        <div className="w-8 h-8 border-3 border-current/30 border-t-current rounded-full animate-spin"
+          style={{ color: 'var(--md-primary)' }} role="status" aria-label="Carregando" />
       </div>
     );
   }
 
-  if (!event || !club) {
+  if (loadError || !event) {
     return (
-      <div className="text-center py-16">
-        <span className="material-symbols-rounded" style={{ fontSize: 40, color: 'var(--md-outline)' }}>error_outline</span>
-        <p className="type-body-medium mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>Event not found</p>
+      <div className="text-center py-16 space-y-3">
+        <span className="material-symbols-rounded" style={{ fontSize: 40, color: 'var(--md-outline)' }}>
+          error_outline
+        </span>
+        <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
+          {loadError || 'Evento não encontrado'}
+        </p>
+        <Link to="/clubs" className="btn-text">Voltar aos clubes</Link>
       </div>
     );
   }
 
-  const updatePayment = (memberId: string, amount: number) => {
-    setPayments(prev => prev.map(p => p.memberId === memberId ? { ...p, amount } : p));
-    setCalculated(false);
-  };
-
-  const splits = calculated ? calculateExpenseSplits(members, totalCost, payments) : [];
-
-  const handleCalculate = async () => {
-    if (totalCost <= 0) { toast.error('Enter the total cost'); return; }
-    const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
-    if (Math.abs(totalPaid - totalCost) > 0.01) {
-      toast.error(`Payments (R$${totalPaid.toFixed(2)}) don't match total (R$${totalCost.toFixed(2)})`);
-      return;
-    }
-    setCalculated(true);
-    const expSplits = calculateExpenseSplits(members, totalCost, payments);
-    toast.success('Expenses calculated!');
-
-    // Sync to PocketBase
-    setSyncing(true);
-    try {
-      const expense = await createExpense({
-          event: id!,
-          total_amount: totalCost,
-          split_type: 'equal',
-          splits: expSplits,
-        });
-
-        // Create payment records for each transfer
-        const paymentData = expSplits.map(s => {
-          const toMember = members.find(m => m.id === s.toMemberId);
-          return {
-            debtor: s.fromMemberId,
-            creditor: s.toMemberId,
-            amount: s.amount,
-            pix_key: toMember?.pixKey,
-          };
-        });
-
-        if (paymentData.length > 0) {
-          await createPayments(expense.id, paymentData);
-          await loadPaymentRecords();
-          toast.success('Payment tracking synced!');
-        }
-      } catch (err) {
-        console.error('PB sync failed:', err);
-        toast.error('Failed to save expenses');
-      } finally {
-        setSyncing(false);
-      }
-  };
-
-  const handleMarkPaid = async (paymentId: string) => {
-    try {
-      await markAsPaid(paymentId);
-      await loadPaymentRecords();
-      toast.success('Marked as paid!');
-    } catch { toast.error('Failed to update'); }
-  };
-
-  const handleConfirm = async (paymentId: string) => {
-    try {
-      await confirmPayment(paymentId);
-      await loadPaymentRecords();
-      toast.success('Payment confirmed!');
-    } catch { toast.error('Failed to confirm'); }
-  };
-
-  const handleDispute = async (paymentId: string) => {
-    try {
-      await disputePayment(paymentId);
-      await loadPaymentRecords();
-      toast('Payment disputed', { icon: '⚠️' });
-    } catch { toast.error('Failed to dispute'); }
-  };
-
-  const getMemberName = (memberId: string) => members.find(m => m.id === memberId)?.name || 'Unknown';
-  const sharePerPerson = members.length > 0 ? totalCost / members.length : 0;
-
-  // Get PB payment record for a split (match by debtor+creditor+amount)
-  const getPaymentRecord = (split: ExpenseSplit): PaymentRecord | undefined => {
-    return paymentRecords.find(pr =>
-      pr.debtor === split.fromMemberId &&
-      pr.creditor === split.toMemberId &&
-      Math.abs(pr.amount - split.amount) < 0.01
-    );
-  };
+  const transfers = expense?.splits?.transfers || [];
+  const myDebts = payments.filter((p) => p.debtor === me?.id);
+  const myCredits = payments.filter((p) => p.creditor === me?.id);
+  const canEdit = !expense || expense.paid_by === me?.id;
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <Link to={`/events/${event.id}`} className="btn-text inline-flex items-center" style={{ paddingLeft: 0, marginBottom: 16 }}>
+    <div className="max-w-2xl mx-auto space-y-5 pb-8">
+      <Link to={`/events/${event.id}`} className="btn-text inline-flex items-center" style={{ paddingLeft: 0 }}>
         <span className="material-symbols-rounded" style={{ fontSize: 20 }}>arrow_back</span>
-        Back to event
+        Voltar ao evento
       </Link>
 
-      <div style={{ marginBottom: 20 }}>
+      <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-primary)' }}>payments</span>
-          <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>Expenses</h1>
+          <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-primary)' }}>
+            payments
+          </span>
+          <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
+            Divisão da conta
+          </h1>
         </div>
-        <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{event.title || event.name}</p>
+        <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>{event.title}</p>
       </div>
 
-      {/* Total Cost */}
-      <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)', marginBottom: 20 }}>
-        <label className="type-label-large block mb-2" style={{ color: 'var(--md-on-surface)' }}>Total Cost (R$)</label>
-        <input type="number" value={totalCost || ''} onChange={e => { setTotalCost(Number(e.target.value)); setCalculated(false); }}
-          placeholder="0.00" step="0.01" min="0" className="input-outlined w-full text-center"
-          style={{ fontSize: 24, fontFamily: 'Playfair Display, serif', fontWeight: 700, color: 'var(--md-primary)', minHeight: 56, borderRadius: 'var(--shape-large)' }} />
-        {totalCost > 0 && members.length > 0 && (
-          <p className="type-body-small text-center mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>
-            R${sharePerPerson.toFixed(2)} per person ({members.length} members)
+      {members.length === 0 && (
+        <div className="card-outlined p-5 text-center" style={{ borderRadius: 'var(--shape-large)' }}>
+          <span className="material-symbols-rounded" style={{ fontSize: 36, color: 'var(--md-outline)' }}>
+            group_off
+          </span>
+          <p className="type-body-medium mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>
+            Este evento não tem participantes, então não há entre quem dividir.
           </p>
-        )}
-      </div>
-
-      {/* Who Paid */}
-      <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)' }}>
-        <h2 className="type-title-medium mb-4" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>Who Paid?</h2>
-        <div className="space-y-3">
-          {members.map(member => {
-            const payment = payments.find(p => p.memberId === member.id);
-            return (
-              <div key={member.id} className="flex items-center gap-3">
-                <span className="type-body-medium flex-1 min-w-0 truncate" style={{ color: 'var(--md-on-surface)' }}>{member.name}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="type-label-small" style={{ color: 'var(--md-on-surface-variant)' }}>R$</span>
-                  <input type="number" value={payment?.amount || ''} onChange={e => updatePayment(member.id, Number(e.target.value))}
-                    placeholder="0.00" step="0.01" min="0" className="input-outlined w-28 text-right"
-                    style={{ minHeight: 48, borderRadius: 'var(--shape-medium)' }} />
-                </div>
-              </div>
-            );
-          })}
+          <Link to={`/events/${event.id}/edit`} className="btn-text mt-2 inline-block">
+            Editar participantes
+          </Link>
         </div>
-        <div className="mt-4 pt-3 flex justify-between type-body-medium" style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
-          <span style={{ color: 'var(--md-on-surface-variant)' }}>Total paid:</span>
-          <span style={{ fontWeight: 700, color: Math.abs(payments.reduce((s, p) => s + p.amount, 0) - totalCost) < 0.01 ? '#2E7D32' : 'var(--md-error)' }}>
-            R${payments.reduce((s, p) => s + p.amount, 0).toFixed(2)}
-          </span>
+      )}
+
+      {/* O meu resumo primeiro — é o que a pessoa abriu a página para ver */}
+      {!editing && payments.length > 0 && (
+        <div data-testid="my-summary" className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)' }}>
+          <h2 className="type-title-medium mb-3" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
+            Você
+          </h2>
+          {myDebts.length === 0 && myCredits.length === 0 && (
+            <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
+              Você está quite — nada a pagar nem a receber.
+            </p>
+          )}
+          {myDebts.map((p) => (
+            <p key={p.id} className="type-body-medium" style={{ color: 'var(--md-on-surface)' }}>
+              Você deve <strong>{formatBRL(p.amount)}</strong> a {nameOf(p.creditor)}
+              {' · '}<span style={{ color: STATUS[p.status].color }}>{STATUS[p.status].label}</span>
+            </p>
+          ))}
+          {myCredits.map((p) => (
+            <p key={p.id} className="type-body-medium" style={{ color: 'var(--md-on-surface)' }}>
+              {nameOf(p.debtor)} te deve <strong>{formatBRL(p.amount)}</strong>
+              {' · '}<span style={{ color: STATUS[p.status].color }}>{STATUS[p.status].label}</span>
+            </p>
+          ))}
         </div>
-      </div>
+      )}
 
-      <button onClick={handleCalculate} disabled={syncing} className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
-        {syncing ? (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <span className="animate-spin" style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block' }} />
-            Syncing...
-          </span>
-        ) : (
-          <>
-            <span className="material-symbols-rounded" style={{ fontSize: 20 }}>calculate</span>
-            Calculate Splits
-          </>
-        )}
-      </button>
+      {/* Formulário */}
+      {editing ? (
+        <>
+          <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)' }}>
+            <label className="type-label-large block mb-2" htmlFor="total-cost" style={{ color: 'var(--md-on-surface)' }}>
+              Valor total (R$)
+            </label>
+            <input id="total-cost" type="number" data-testid="total-cost"
+              value={totalCost || ''} onChange={(e) => setTotalCost(Number(e.target.value))}
+              placeholder="0,00" step="0.01" min="0" className="input-outlined w-full text-center"
+              style={{
+                fontSize: 24, fontFamily: 'Playfair Display, serif', fontWeight: 700,
+                color: 'var(--md-primary)', minHeight: 56, borderRadius: 'var(--shape-large)',
+              }} />
+            {totalCost > 0 && members.length > 0 && (
+              <p className="type-body-small text-center mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>
+                {formatBRL(sharePerPerson)} por pessoa ({members.length} participantes)
+              </p>
+            )}
+          </div>
 
-      {/* Transfers with Payment Status */}
-      {calculated && splits.length > 0 && (
+          <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)' }}>
+            <h2 className="type-title-medium mb-1" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
+              Quem desembolsou?
+            </h2>
+            <p className="type-body-small mb-4" style={{ color: 'var(--md-on-surface-variant)' }}>
+              Informe quanto cada pessoa pagou de fato. A soma precisa bater com o total.
+            </p>
+            <div className="space-y-3">
+              {members.map((member) => {
+                const c = contributions.find((x) => x.memberId === member.id);
+                return (
+                  <div key={member.id} className="flex items-center gap-3">
+                    <label htmlFor={`paid-${member.id}`} className="type-body-medium flex-1 min-w-0 truncate"
+                      style={{ color: 'var(--md-on-surface)' }}>
+                      {member.name}{member.id === me?.id ? ' (você)' : ''}
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <span className="type-label-small" style={{ color: 'var(--md-on-surface-variant)' }}>R$</span>
+                      <input id={`paid-${member.id}`} type="number" data-testid={`paid-${member.id}`}
+                        value={c?.amount || ''} onChange={(e) => updateContribution(member.id, Number(e.target.value))}
+                        placeholder="0,00" step="0.01" min="0" className="input-outlined w-28 text-right"
+                        style={{ minHeight: 48, borderRadius: 'var(--shape-medium)' }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 pt-3 flex justify-between type-body-medium"
+              style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
+              <span style={{ color: 'var(--md-on-surface-variant)' }}>Soma informada:</span>
+              <span data-testid="total-paid" style={{
+                fontWeight: 700, color: balanced ? '#2E7D32' : 'var(--md-error)',
+              }}>{formatBRL(totalPaid)}</span>
+            </div>
+            {!balanced && totalCost > 0 && (
+              <p className="type-body-small mt-2" style={{ color: 'var(--md-error)' }}>
+                Faltam {formatBRL(totalCost - totalPaid)} para fechar com o total.
+              </p>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={handleSave} disabled={saving || members.length === 0}
+              data-testid="save-split" className="btn-primary flex-1"
+              style={{ height: 48, borderRadius: 'var(--shape-large)', opacity: saving ? 0.7 : 1 }}>
+              <span className="material-symbols-rounded" aria-hidden="true" style={{ fontSize: 20 }}>calculate</span>
+              {saving ? 'Salvando...' : 'Calcular e salvar'}
+            </button>
+            {expense && (
+              <button onClick={() => { setEditing(false); load(); }} className="btn-outlined"
+                style={{ height: 48, borderRadius: 'var(--shape-large)', padding: '0 20px' }}>
+                Cancelar
+              </button>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)' }}>
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="type-body-small" style={{ color: 'var(--md-on-surface-variant)' }}>Total da conta</p>
+              <p className="type-headline-small" style={{
+                fontFamily: 'Playfair Display, serif', color: 'var(--md-primary)',
+              }}>{formatBRL(expense?.total_amount || 0)}</p>
+              <p className="type-body-small" style={{ color: 'var(--md-on-surface-variant)' }}>
+                {formatBRL(sharePerPerson)} por pessoa · {members.length} participantes
+              </p>
+            </div>
+            {canEdit && (
+              <button onClick={() => setEditing(true)} className="btn-outlined" data-testid="edit-split"
+                style={{ borderRadius: 'var(--shape-full)', padding: '10px 18px' }}>
+                <span className="material-symbols-rounded" aria-hidden="true" style={{ fontSize: 18 }}>edit</span>
+                Editar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Transferências */}
+      {!editing && transfers.length > 0 && (
         <div className="card-outlined p-5" style={{ borderRadius: 'var(--shape-extra-large)' }}>
           <div className="flex items-center gap-2 mb-4">
-            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20, color: 'var(--md-primary)' }}>swap_horiz</span>
-            <h2 className="type-title-medium" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>Transfers</h2>
+            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20, color: 'var(--md-primary)' }}>
+              swap_horiz
+            </span>
+            <h2 className="type-title-medium" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
+              Transferências
+            </h2>
           </div>
           <div className="space-y-3">
-            {splits.map((split, i) => {
-              const toMember = members.find(m => m.id === split.toMemberId);
-              const pr = getPaymentRecord(split);
-              const status = pr?.status || 'pending';
-              const statusCfg = STATUS_CONFIG[status];
-              const isDebtor = currentUser?.id === split.fromMemberId;
-              const isCreditor = currentUser?.id === split.toMemberId;
-
+            {payments.map((p) => {
+              const cfg = STATUS[p.status];
+              const isDebtor = me?.id === p.debtor;
+              const isCreditor = me?.id === p.creditor;
               return (
-                <div key={i} className="p-4" style={{ background: 'var(--md-surface-container)', borderRadius: 'var(--shape-large)' }}>
-                  {/* Transfer info */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="type-label-large" style={{ color: 'var(--md-on-surface)' }}>{getMemberName(split.fromMemberId)}</span>
-                    <span className="material-symbols-rounded" style={{ fontSize: 16, color: 'var(--md-outline)' }}>arrow_forward</span>
-                    <span className="type-label-large" style={{ color: 'var(--md-on-surface)' }}>{getMemberName(split.toMemberId)}</span>
-                    <span className="ml-auto type-title-small font-bold" style={{ color: 'var(--md-tertiary)' }}>R${split.amount.toFixed(2)}</span>
+                <div key={p.id} data-testid={`transfer-${p.debtor}-${p.creditor}`} className="p-4"
+                  style={{ background: 'var(--md-surface-container)', borderRadius: 'var(--shape-large)' }}>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="type-label-large" style={{ color: 'var(--md-on-surface)' }}>
+                      {nameOf(p.debtor)}
+                    </span>
+                    <span className="material-symbols-rounded" aria-hidden="true"
+                      style={{ fontSize: 16, color: 'var(--md-outline)' }}>arrow_forward</span>
+                    <span className="type-label-large" style={{ color: 'var(--md-on-surface)' }}>
+                      {nameOf(p.creditor)}
+                    </span>
+                    <span className="ml-auto type-title-small font-bold" style={{ color: 'var(--md-tertiary)' }}>
+                      {formatBRL(p.amount)}
+                    </span>
                   </div>
 
-                  {/* Status badge */}
-                  {pr && (
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                      padding: '4px 12px', borderRadius: 'var(--shape-full)',
-                      background: statusCfg.bg, marginBottom: 8,
-                    }}>
-                      <span className="material-symbols-rounded" style={{ fontSize: 14, color: statusCfg.color }}>{statusCfg.icon}</span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: statusCfg.color }}>{statusCfg.label}</span>
-                      {pr.paid_at && status === 'paid' && (
-                        <span style={{ fontSize: 11, color: 'var(--md-on-surface-variant)', marginLeft: 4 }}>
-                          {new Date(pr.paid_at).toLocaleDateString('pt-BR')}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '4px 12px', borderRadius: 'var(--shape-full)',
+                    background: cfg.bg, marginBottom: 8,
+                  }}>
+                    <span className="material-symbols-rounded" aria-hidden="true"
+                      style={{ fontSize: 14, color: cfg.color }}>{cfg.icon}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: cfg.color }}>{cfg.label}</span>
+                  </div>
 
-                  {/* Pix key */}
-                  {toMember?.pixKey && (
+                  {isDebtor && p.pix_key && (
                     <div className="flex items-center gap-2 py-2" style={{ borderTop: '1px solid var(--md-outline-variant)' }}>
                       <span className="pix-badge">PIX</span>
-                      <span className="type-body-small flex-1 truncate" style={{ color: 'var(--md-on-surface-variant)' }}>{toMember.pixKey}</span>
-                      <button onClick={() => { navigator.clipboard.writeText(toMember.pixKey!); toast.success('Chave Pix copiada!'); }}
-                        style={{ background: '#32BCAD', color: 'white', fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 'var(--shape-medium)', border: 'none', cursor: 'pointer', minHeight: 32 }}>
-                        Copiar
-                      </button>
+                      <span className="type-body-small flex-1 truncate" style={{ color: 'var(--md-on-surface-variant)' }}>
+                        {p.pix_key}
+                      </span>
+                      <button onClick={() => {
+                        navigator.clipboard.writeText(p.pix_key!);
+                        toast.success('Chave Pix copiada');
+                      }} style={{
+                        background: '#1F8A7C', color: 'white', fontSize: 12, fontWeight: 600,
+                        padding: '6px 12px', borderRadius: 'var(--shape-medium)',
+                        border: 'none', cursor: 'pointer', minHeight: 32,
+                      }}>Copiar</button>
                     </div>
                   )}
 
-                  {/* Action buttons (only for authenticated users) */}
-                  {authenticated && pr && (
-                    <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-                      {/* Debtor can mark as paid */}
-                      {isDebtor && status === 'pending' && (
-                        <button onClick={() => handleMarkPaid(pr.id)} style={{
-                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                          padding: '10px 16px', borderRadius: 'var(--shape-large)',
-                          background: '#32BCAD', color: 'white', border: 'none',
-                          fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                  <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {isDebtor && (p.status === 'pending' || p.status === 'disputed') && (
+                      <button data-testid={`mark-paid-${p.id}`}
+                        onClick={() => act(() => markAsPaid(p.id), 'Marcado como pago')}
+                        style={{
+                          flex: 1, minWidth: 140, display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', gap: 6, padding: '10px 16px',
+                          borderRadius: 'var(--shape-large)', background: '#1F8A7C',
+                          color: 'white', border: 'none', fontSize: 14, fontWeight: 600,
+                          cursor: 'pointer', fontFamily: 'inherit',
                         }}>
-                          <span className="material-symbols-rounded" style={{ fontSize: 18 }}>check</span>
-                          I've Paid
-                        </button>
-                      )}
+                        <span className="material-symbols-rounded" aria-hidden="true" style={{ fontSize: 18 }}>check</span>
+                        Já paguei
+                      </button>
+                    )}
 
-                      {/* Creditor can confirm or dispute */}
-                      {isCreditor && status === 'paid' && (
-                        <>
-                          <button onClick={() => handleConfirm(pr.id)} style={{
-                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                            padding: '10px 16px', borderRadius: 'var(--shape-large)',
-                            background: '#2E7D32', color: 'white', border: 'none',
-                            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                    {isCreditor && p.status === 'paid' && (
+                      <>
+                        <button data-testid={`confirm-${p.id}`}
+                          onClick={() => act(() => confirmPayment(p.id), 'Recebimento confirmado')}
+                          style={{
+                            flex: 1, minWidth: 140, display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', gap: 6, padding: '10px 16px',
+                            borderRadius: 'var(--shape-large)', background: '#2E7D32',
+                            color: 'white', border: 'none', fontSize: 14, fontWeight: 600,
+                            cursor: 'pointer', fontFamily: 'inherit',
                           }}>
-                            <span className="material-symbols-rounded" style={{ fontSize: 18 }}>check_circle</span>
-                            Confirm Received
-                          </button>
-                          <button onClick={() => handleDispute(pr.id)} style={{
+                          <span className="material-symbols-rounded" aria-hidden="true" style={{ fontSize: 18 }}>check_circle</span>
+                          Confirmar recebimento
+                        </button>
+                        <button data-testid={`dispute-${p.id}`}
+                          onClick={() => act(() => disputePayment(p.id), 'Pagamento contestado')}
+                          style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                             padding: '10px 16px', borderRadius: 'var(--shape-large)',
-                            background: 'rgba(186,26,26,0.08)', color: 'var(--md-error)', border: '1px solid var(--md-error)',
-                            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                            background: 'rgba(186,26,26,0.08)', color: 'var(--md-error)',
+                            border: '1px solid var(--md-error)', fontSize: 14, fontWeight: 600,
+                            cursor: 'pointer', fontFamily: 'inherit',
                           }}>
-                            <span className="material-symbols-rounded" style={{ fontSize: 18 }}>error_outline</span>
-                            Dispute
-                          </button>
-                        </>
-                      )}
+                          Contestar
+                        </button>
+                      </>
+                    )}
 
-                      {/* Waiting states */}
-                      {isDebtor && status === 'paid' && (
-                        <div style={{
-                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                          padding: '10px 16px', borderRadius: 'var(--shape-large)',
-                          background: 'rgba(50,188,173,0.08)', color: '#32BCAD',
-                          fontSize: 13, fontWeight: 500,
-                        }}>
-                          <span className="material-symbols-rounded" style={{ fontSize: 18 }}>schedule</span>
-                          Waiting confirmation...
-                        </div>
-                      )}
-
-                      {status === 'confirmed' && (
-                        <div style={{
-                          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                          padding: '10px 16px', borderRadius: 'var(--shape-large)',
-                          background: 'rgba(46,125,50,0.08)', color: '#2E7D32',
-                          fontSize: 13, fontWeight: 500,
-                        }}>
-                          <span className="material-symbols-rounded ms-filled" style={{ fontSize: 18 }}>check_circle</span>
-                          All settled! ✓
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Not authenticated hint */}
-                  {!authenticated && !pr && (
-                    <p style={{ fontSize: 12, color: 'var(--md-on-surface-variant)', fontStyle: 'italic', marginTop: 8 }}>
-                      Sign in to track payment status
-                    </p>
-                  )}
+                    {isDebtor && p.status === 'paid' && (
+                      <span className="type-body-small" style={{ color: 'var(--md-on-surface-variant)' }}>
+                        Aguardando {nameOf(p.creditor)} confirmar...
+                      </span>
+                    )}
+                    {p.status === 'confirmed' && (
+                      <span className="type-body-small" style={{ color: '#2E7D32' }}>
+                        Acertado.
+                      </span>
+                    )}
+                    {isCreditor && p.status === 'disputed' && (
+                      <span className="type-body-small" style={{ color: 'var(--md-error)' }}>
+                        Você contestou — {nameOf(p.debtor)} pode marcar como pago de novo.
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -407,10 +453,14 @@ export const ExpensePage: React.FC = () => {
         </div>
       )}
 
-      {calculated && splits.length === 0 && (
+      {!editing && expense && transfers.length === 0 && (
         <div className="card-elevated text-center py-8" style={{ borderRadius: 'var(--shape-extra-large)' }}>
-          <span className="material-symbols-rounded ms-filled" style={{ fontSize: 40, color: '#2E7D32' }}>check_circle</span>
-          <p className="type-body-medium mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>Everyone is even! No transfers needed.</p>
+          <span className="material-symbols-rounded ms-filled" style={{ fontSize: 40, color: '#2E7D32' }}>
+            check_circle
+          </span>
+          <p className="type-body-medium mt-2" style={{ color: 'var(--md-on-surface-variant)' }}>
+            Todo mundo quite — nenhuma transferência necessária.
+          </p>
         </div>
       )}
     </div>

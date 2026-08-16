@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { pb, signIn, signUp, signOut, getCurrentUser, isAuthenticated } from '../services/pocketbase';
+import {
+  pb, signIn, signUp, signOut, getCurrentUser, isAuthenticated,
+  pedirArmazenamentoPersistente,
+} from '../services/pocketbase';
 import type { RecordModel } from 'pocketbase';
 
 interface AuthContextType {
@@ -15,31 +18,30 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<RecordModel | null>(getCurrentUser());
-  const [loading, setLoading] = useState(true);
+  // A sessão do PocketBase já está no localStorage quando o app monta, então
+  // dá para resolver o estado inicial de forma síncrona — chamar setState
+  // dentro do efeito só provocava um render em cascata.
+  const [user, setUser] = useState<RecordModel | null>(
+    () => (pb.authStore.isValid ? pb.authStore.record : null),
+  );
+  const loading = false; // resolvido de forma síncrona no estado inicial
 
   useEffect(() => {
-    // Check if existing auth is still valid
-    if (pb.authStore.isValid) {
-      setUser(pb.authStore.record);
-    }
-    setLoading(false);
-
-    // Listen for auth changes
-    const unsub = pb.authStore.onChange((_token, record) => {
-      setUser(record);
-    });
+    const unsub = pb.authStore.onChange((_token, record) => { setUser(record); });
     return () => { unsub(); };
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     await signIn(email, password);
     setUser(getCurrentUser());
+    // Depois de entrar o navegador leva o pedido mais a sério
+    pedirArmazenamentoPersistente();
   }, []);
 
   const register = useCallback(async (email: string, password: string, displayName: string) => {
     await signUp(email, password, displayName);
     setUser(getCurrentUser());
+    pedirArmazenamentoPersistente();
   }, []);
 
   const logout = useCallback(() => {

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getMyClubs, getEvents } from '../services/pocketbase';
+import type { Club } from '../types';
 
 export const ClubList: React.FC = () => {
-  const [clubs, setClubs] = useState<any[]>([]);
+  const [clubs, setClubs] = useState<Club[]>([]);
   const [eventCounts, setEventCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
@@ -21,8 +22,8 @@ export const ClubList: React.FC = () => {
           } catch { counts[club.id] = 0; }
         }));
         setEventCounts(counts);
-      } catch (e) {
-        console.error('Failed to load clubs:', e);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -44,7 +45,7 @@ export const ClubList: React.FC = () => {
           fontFamily: 'Playfair Display, serif',
           fontSize: 28, fontWeight: 700,
           color: 'var(--dp-cream)',
-        }}>My Clubs</h1>
+        }}>Meus clubes</h1>
 
         <Link
           to="/clubs/new"

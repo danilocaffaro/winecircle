@@ -1,87 +1,82 @@
-/// <reference path="../types.d.ts" />
+/// <reference path="../pb_data/types.d.ts" />
 
-// Payment status change hook — sends push notifications
-onRecordAfterUpdateRequest((e) => {
-  const record = e.record;
-  const old = e.record?.originalCopy();
+// Notificações de mudança de status de pagamento (A-11)
+//
+// A versão anterior era escrita contra uma API do PocketBase que não existe
+// mais: onRecordAfterUpdateRequest (virou onRecordAfterUpdateSuccess),
+// $app.dao() (removido na 0.23) e require('fs') — o runtime JS do PocketBase
+// não é Node. O hook falhava no carregamento, então nenhuma notificação era
+// enfileirada; o push-daemon rodava com a fila sempre vazia.
 
-  // Only for wc_payments collection
-  if (record.collection().name !== 'wc_payments') return;
+onRecordAfterUpdateSuccess((e) => {
+  const record = e.record
+  const status = record.getString("status")
 
-  // Only if status changed
-  if (!old || record.get('status') === old.get('status')) return;
-
-  const status = record.getString('status');
-  const debtor = record.getString('debtor');
-  const creditor = record.getString('creditor');
-  const amount = record.getFloat('amount');
-
-  console.log(`[Push] Payment ${record.id} status changed to ${status}`);
+  // Só interessa a transição de status
+  const old = e.record.original()
+  if (old && old.getString("status") === status) {
+    return e.next()
+  }
 
   try {
-    // Load user records to get names
-    const debtorUser = $app.dao().findRecordById('users', debtor);
-    const creditorUser = $app.dao().findRecordById('users', creditor);
-    const debtorName = debtorUser.getString('display_name') || debtorUser.getString('email');
-    const creditorName = creditorUser.getString('display_name') || creditorUser.getString('email');
+    const debtor = record.getString("debtor")
+    const creditor = record.getString("creditor")
+    const amount = record.getFloat("amount")
 
-    // Decide who to notify and what message
-    let targetUser = null;
-    let title = 'Wine Circle';
-    let body = '';
-    let url = '/profile';
-
-    if (status === 'paid') {
-      // Debtor marked as paid → notify creditor
-      targetUser = creditor;
-      title = 'Payment received!';
-      body = `${debtorName} paid R$${amount.toFixed(2)} — confirm receipt?`;
-    } else if (status === 'confirmed') {
-      // Creditor confirmed → notify debtor
-      targetUser = debtor;
-      title = 'Payment confirmed!';
-      body = `${creditorName} confirmed receiving R$${amount.toFixed(2)}`;
-    } else if (status === 'disputed') {
-      // Creditor disputed → notify debtor
-      targetUser = debtor;
-      title = 'Payment disputed';
-      body = `${creditorName} has questions about the R$${amount.toFixed(2)} payment`;
+    const nameOf = (id) => {
+      try {
+        const u = e.app.findRecordById("users", id)
+        return u.getString("display_name") || u.getString("email") || "Alguém"
+      } catch (err) { return "Alguém" }
     }
 
-    if (!targetUser) return;
+    let target = null, title = "Wine Circle", body = ""
+    const brl = "R$" + amount.toFixed(2).replace(".", ",")
 
-    // Load push subscriptions for target user
-    const subs = $app.dao().findRecordsByFilter(
-      'wc_push_subs',
-      `user = "${targetUser}"`,
-      '-created',
-      10
-    );
-
-    if (subs.length === 0) {
-      console.log(`[Push] No subscriptions for user ${targetUser}`);
-      return;
+    if (status === "paid") {
+      target = creditor
+      title = "Pagamento recebido"
+      body = nameOf(debtor) + " marcou " + brl + " como pago — confirma o recebimento?"
+    } else if (status === "confirmed") {
+      target = debtor
+      title = "Pagamento confirmado"
+      body = nameOf(creditor) + " confirmou o recebimento de " + brl
+    } else if (status === "disputed") {
+      target = debtor
+      title = "Pagamento contestado"
+      body = nameOf(creditor) + " tem dúvidas sobre os " + brl
     }
 
-    // Send push via external script (cannot import web-push in PB hooks directly)
-    // Instead, write to a queue file or trigger via HTTP
+    if (!target) return e.next()
+
+    const subs = e.app.findRecordsByFilter(
+      "wc_push_subs", "user = {:user}", "-created", 10, 0, { user: target }
+    )
+    if (!subs.length) {
+      console.log("[push] sem inscrições para " + target)
+      return e.next()
+    }
+
     const payload = JSON.stringify({
-      user: targetUser,
-      title,
-      body,
-      url,
-      subscriptions: subs.map(s => ({
-        endpoint: s.getString('endpoint'),
-        keys: s.get('keys'),
+      user: target, title, body, url: "/profile",
+      subscriptions: subs.map((s) => ({
+        endpoint: s.getString("endpoint"),
+        keys: s.get("keys"),
       })),
-    });
+    })
 
-    // Write to /tmp/wc-push-queue.jsonl (newline-delimited JSON)
-    const fs = require('fs');
-    fs.appendFileSync('/tmp/wc-push-queue.jsonl', payload + '\n');
-    console.log(`[Push] Queued notification for ${targetUser}`);
+    // $os.writeFile sobrescreve; para uma fila append-only lemos e reescrevemos.
+    // Volume é baixíssimo (uma linha por mudança de status), então serve.
+    const QUEUE = "/tmp/wc-push-queue.jsonl"
+    let existing = ""
+    try { existing = toString($os.readFile(QUEUE)) } catch (err) { existing = "" }
+    $os.writeFile(QUEUE, existing + payload + "\n", 0o644)
 
+    console.log("[push] enfileirado para " + target + " (" + status + ")")
   } catch (err) {
-    console.error('[Push] Error:', err);
+    // Nunca derrubar a atualização do pagamento por causa da notificação
+    console.log("[push] erro: " + err)
   }
-}, 'wc_payments');
+
+  return e.next()
+}, "wc_payments")

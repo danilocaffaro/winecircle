@@ -13,15 +13,13 @@ concurrency:
 
 env:
   NODE_VERSION: '22'
+  POCKETBASE_VERSION: '0.36.8'
 
 jobs:
-  ci:
-    name: ci
+  build:
+    name: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: app
     steps:
       - uses: actions/checkout@v4
 
@@ -31,18 +29,93 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - name: Install dependencies
+      - name: Instalar dependências
+        working-directory: app
         run: npm ci
 
+      # Lint deixou de ser continue-on-error: os 60 erros que ele ignorava
+      # eram exatamente o tipo de coisa que deixava bug passar despercebido.
       - name: Lint
+        working-directory: app
         run: npm run lint
-        continue-on-error: true
 
-      - name: Type check + Build
+      - name: Type check + build
+        working-directory: app
         run: npm run build
 
-      - name: Verify build output
+      - name: Conferir saída do build
+        working-directory: app
         run: |
-          test -f dist/index.html || (echo "❌ Build failed: no index.html" && exit 1)
-          FILE_COUNT=$(find dist -type f | wc -l)
-          echo "✅ Build OK: $FILE_COUNT files"
+          test -f dist/index.html || { echo "❌ build sem index.html"; exit 1; }
+          # O service worker já foi entregue como TypeScript uma vez e falhou
+          # em toda visita; agora o parse é verificado no CI.
+          node --check dist/sw.js || { echo "❌ sw.js não é JavaScript válido"; exit 1; }
+          # E a chave do Gemini não pode voltar para o bundle.
+          if grep -rqE "AIzaSy[A-Za-z0-9_-]{20,}" dist/; then
+            echo "❌ chave de API encontrada no bundle"; exit 1
+          fi
+          echo "✅ build OK ($(find dist -type f | wc -l) arquivos)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: app/dist
+          retention-days: 7
+
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Instalar dependências
+        run: |
+          npm ci
+          cd app && npm ci
+
+      - name: Instalar navegadores do Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Subir PocketBase de teste
+        run: |
+          mkdir -p test/pb && cd test/pb
+          curl -sSL -o pb.zip \
+            "https://github.com/pocketbase/pocketbase/releases/download/v${POCKETBASE_VERSION}/pocketbase_${POCKETBASE_VERSION}_linux_amd64.zip"
+          unzip -oq pb.zip
+          ./pocketbase serve --http=127.0.0.1:8091 --dir=./pb_data \
+            --hooksDir=../../pb_hooks --migrationsDir=../../pb_migrations &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8091/api/health >/dev/null && break
+            sleep 1
+          done
+          ./pocketbase superuser upsert test@local.dev "TesteLocal2026!" --dir=./pb_data
+
+      - name: Subir o app
+        run: |
+          cd app && npx vite --port 5174 --host 127.0.0.1 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:5174/ >/dev/null && break
+            sleep 1
+          done
+        env:
+          VITE_POCKETBASE_URL: http://127.0.0.1:8091
+
+      - name: Cenários de UI
+        run: npx playwright test
+        env:
+          WC_TEST_PB_URL: http://127.0.0.1:8091
+          WC_TEST_BASE_URL: http://127.0.0.1:5174
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            test/report
+            test-results
+          retention-days: 7

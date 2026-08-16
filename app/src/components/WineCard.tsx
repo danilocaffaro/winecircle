@@ -64,7 +64,7 @@ export const WineCard: React.FC<Props> = ({ wine, blind, blindLabel, onClick, ch
             <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: 16, fontWeight: 600, color: 'var(--md3-on-surface)' }}>
               {blindLabel || 'Wine'}
             </h3>
-            <p className="type-body-small" style={{ color: 'var(--md3-on-surface-variant)', marginTop: 2 }}>Identity hidden during tasting</p>
+            <p className="type-body-small" style={{ color: 'var(--md3-on-surface-variant)', marginTop: 2 }}>Identidade oculta na degustação</p>
           </div>
         </div>
         {children && <div style={{ padding: '0 18px 16px', borderTop: '1px solid var(--md3-outline-variant)' }}>{children}</div>}
@@ -101,7 +101,7 @@ export const WineCard: React.FC<Props> = ({ wine, blind, blindLabel, onClick, ch
                 <h3 style={{
                   fontFamily: 'Playfair Display, serif', fontSize: 15, fontWeight: 600,
                   color: 'var(--md3-on-surface)', lineHeight: 1.3,
-                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden',
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'], overflow: 'hidden',
                 }}>
                   {wine.name}
                   {wine.year && !wine.name.includes(String(wine.year)) && (
@@ -175,7 +175,7 @@ export const WineCard: React.FC<Props> = ({ wine, blind, blindLabel, onClick, ch
               <p style={{
                 fontSize: 11, fontStyle: 'italic', marginTop: 10, lineHeight: 1.5,
                 color: 'var(--md3-on-surface-variant)',
-                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden',
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'], overflow: 'hidden',
               }}>"{wine.tastingNotes}"</p>
             )}
           </div>
@@ -188,4 +188,3 @@ export const WineCard: React.FC<Props> = ({ wine, blind, blindLabel, onClick, ch
   );
 };
 
-export { wineTypeColors, getRatingColor };

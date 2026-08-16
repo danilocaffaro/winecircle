@@ -1,15 +1,25 @@
-# Environment files
+# Ambiente
 .env
-.env.*
+.env.local
+.env.test
 app/.env
-app/.env.*
+app/.env.local
+app/.env.development
+# app/.env.production é versionado de propósito: só contém valores públicos
 
-# Dependencies & build
+# Dependências e build
 node_modules/
 dist/
-.next/
 build/
 .cache/
+
+# Instância local de teste
+test/pb/pocketbase
+test/pb/pb_data/
+test/pb/pb.log
+test-results/
+test/report/
+playwright-report/
 
 # OS
 .DS_Store

@@ -1,194 +1,109 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import { useLocation } from 'react-router-dom';
+import { FeatureCarousel } from '../components/FeatureCarousel';
+import { AuthSheet } from '../components/AuthSheet';
+import { InstalarApp } from '../components/InstalarApp';
 
+/**
+ * Porta de entrada do app.
+ *
+ * Antes era um muro de login: quem chegava pela primeira vez via um formulário
+ * e nada mais, sem nenhuma pista do que o produto faz. Agora a tela é a
+ * apresentação — um carrossel com uma tela de exemplo por funcionalidade — e
+ * entrar fica a um toque, no cabeçalho e numa barra fixa no rodapé.
+ */
 export const AuthPage: React.FC = () => {
-  const { login, register } = useAuth();
-  const navigate = useNavigate();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      if (mode === 'login') {
-        await login(email, password);
-        toast.success('Bem-vindo de volta!');
-      } else {
-        if (!displayName.trim()) {
-          toast.error('Digite seu nome');
-          setLoading(false);
-          return;
-        }
-        await register(email, password, displayName);
-        toast.success('Conta criada!');
-      }
-      // Redirect if came from join link
-      const joinRedirect = localStorage.getItem('wc_join_redirect');
-      if (joinRedirect) {
-        localStorage.removeItem('wc_join_redirect');
-        navigate(joinRedirect);
-      }
-    } catch (err: any) {
-      const msg = err?.data?.message || err?.message || 'Algo deu errado';
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const location = useLocation();
+  const destino = (location.state as { from?: string } | null)?.from || '/';
+  const [modo, setModo] = useState<'login' | 'register' | null>(null);
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      background: 'var(--md-background)', padding: '24px 16px',
+      minHeight: '100dvh', background: 'var(--md-background)',
+      display: 'flex', flexDirection: 'column',
     }}>
-      {/* Logo */}
-      <div style={{ marginBottom: 32, textAlign: 'center' }}>
-        <div style={{
-          width: 64, height: 64, borderRadius: 20, margin: '0 auto 16px',
-          background: 'linear-gradient(135deg, var(--md-primary), var(--md-tertiary))',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <span style={{ color: '#fff', fontSize: 28, fontWeight: 700 }}>W</span>
-        </div>
-        <h1 style={{
-          fontFamily: 'Playfair Display, serif', fontSize: 28, fontWeight: 700,
-          color: 'var(--md-on-surface)',
-        }}>Wine Circle</h1>
-        <p style={{ color: 'var(--md-on-surface-variant)', fontSize: 14, marginTop: 4 }}>
-          Taste together, discover more
-        </p>
-      </div>
-
-      {/* Form card */}
-      <div style={{
-        width: '100%', maxWidth: 400,
-        background: 'var(--md-surface-container)',
-        borderRadius: 24, padding: '32px 24px',
-        border: '1px solid var(--md-outline-variant)',
-      }}>
-        {/* Toggle */}
-        <div style={{
-          display: 'flex', gap: 4, marginBottom: 24,
-          background: 'var(--md-surface-container-high)',
-          borderRadius: 'var(--shape-full)', padding: 4,
-        }}>
-          {(['login', 'register'] as const).map(m => (
-            <button key={m} onClick={() => setMode(m)} style={{
-              flex: 1, padding: '10px 0', borderRadius: 'var(--shape-full)',
-              border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600,
-              fontFamily: 'inherit',
-              background: mode === m ? 'var(--md-primary)' : 'transparent',
-              color: mode === m ? 'var(--md-on-primary)' : 'var(--md-on-surface-variant)',
-              transition: 'all 0.2s ease',
-            }}>
-              {m === 'login' ? 'Entrar' : 'Criar conta'}
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {mode === 'register' && (
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--md-on-surface-variant)', marginBottom: 6, display: 'block' }}>
-                Your Name
-              </label>
-              <input
-                type="text" value={displayName} onChange={e => setDisplayName(e.target.value)}
-                placeholder="How your friends know you"
-                required
-                style={{
-                  width: '100%', boxSizing: 'border-box', height: 48,
-                  padding: '0 16px', borderRadius: 12,
-                  background: 'var(--md-surface)', border: '1px solid var(--md-outline-variant)',
-                  color: 'var(--md-on-surface)', fontSize: 15, fontFamily: 'inherit',
-                  outline: 'none',
-                }}
-              />
-            </div>
-          )}
-
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--md-on-surface-variant)', marginBottom: 6, display: 'block' }}>
-              Email
-            </label>
-            <input
-              type="email" value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required autoComplete="email"
-              style={{
-                width: '100%', boxSizing: 'border-box', height: 48,
-                padding: '0 16px', borderRadius: 12,
-                background: 'var(--md-surface)', border: '1px solid var(--md-outline-variant)',
-                color: 'var(--md-on-surface)', fontSize: 15, fontFamily: 'inherit',
-                outline: 'none',
-              }}
-            />
-          </div>
-
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--md-on-surface-variant)', marginBottom: 6, display: 'block' }}>
-              Password
-            </label>
-            <input
-              type="password" value={password} onChange={e => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
-              required minLength={8} autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              style={{
-                width: '100%', boxSizing: 'border-box', height: 48,
-                padding: '0 16px', borderRadius: 12,
-                background: 'var(--md-surface)', border: '1px solid var(--md-outline-variant)',
-                color: 'var(--md-on-surface)', fontSize: 15, fontFamily: 'inherit',
-                outline: 'none',
-              }}
-            />
-          </div>
-
-          <button type="submit" disabled={loading} style={{
-            width: '100%', height: 52, borderRadius: 'var(--shape-full)',
-            border: 'none', cursor: loading ? 'wait' : 'pointer',
-            background: 'var(--md-primary)', color: 'var(--md-on-primary)',
-            fontSize: 16, fontWeight: 600, fontFamily: 'inherit',
-            opacity: loading ? 0.7 : 1,
-            transition: 'opacity 0.2s',
-            marginTop: 8,
+      {/* Cabeçalho */}
+      <header className="entry-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{
+            width: 34, height: 34, borderRadius: 11, flexShrink: 0,
+            background: 'linear-gradient(135deg, var(--md-primary), var(--md-tertiary))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            {loading ? (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                <span className="animate-spin" style={{
-                  width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)',
-                  borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block',
-                }} />
-                {mode === 'login' ? 'Entrando...' : 'Criando conta...'}
-              </span>
-            ) : (
-              mode === 'login' ? 'Entrar' : 'Criar conta'
-            )}
-          </button>
-        </form>
+            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 19, color: '#fff' }}>
+              wine_bar
+            </span>
+          </span>
+          <span style={{
+            fontFamily: 'Playfair Display, serif', fontSize: 19, fontWeight: 700,
+            color: 'var(--md-on-surface)',
+          }}>Wine Circle</span>
+        </div>
+
+        <div className="entry-header-actions">
+          <button type="button" onClick={() => setModo('login')} data-testid="header-login"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit', fontSize: 15, fontWeight: 600,
+              color: 'var(--md-on-surface)', padding: '10px 14px',
+            }}>Entrar</button>
+          <button type="button" onClick={() => setModo('register')} data-testid="header-register"
+            style={{
+              background: 'var(--md-primary)', color: 'var(--md-on-primary)',
+              border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+              fontSize: 15, fontWeight: 600, padding: '11px 20px',
+              borderRadius: 'var(--shape-full)',
+            }}>Criar conta</button>
+        </div>
+      </header>
+
+      {/* Apresentação */}
+      <main style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '20px 16px 0',
+      }}>
+        <h1 style={{
+          fontFamily: 'Playfair Display, serif', fontSize: 'clamp(26px, 7vw, 36px)',
+          fontWeight: 700, color: 'var(--md-on-surface)', lineHeight: 1.1,
+          textAlign: 'center', textWrap: 'balance', marginBottom: 8,
+        }}>
+          Prove o vinho,{' '}
+          <span style={{ color: 'var(--md-primary)' }}>não o rótulo.</span>
+        </h1>
+        <p style={{
+          color: 'var(--md-on-surface-variant)', fontSize: 15, textAlign: 'center',
+          maxWidth: 340, lineHeight: 1.5, marginBottom: 28,
+        }}>
+          Degustações às cegas com os amigos, do convite ao acerto da conta.
+        </p>
+
+        <FeatureCarousel />
+      </main>
+
+      {/* Barra fixa — no celular, entrar nunca sai da tela */}
+      <div className="entry-dock">
+        <InstalarApp />
+        <div className="entry-dock-botoes">
+        <button type="button" onClick={() => setModo('login')} data-testid="dock-login"
+          style={{
+            flex: 1, height: 50, borderRadius: 'var(--shape-full)',
+            background: 'var(--md-surface-container-high)', color: 'var(--md-on-surface)',
+            border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+            fontSize: 15, fontWeight: 600,
+          }}>Entrar</button>
+        <button type="button" onClick={() => setModo('register')} data-testid="dock-register"
+          style={{
+            flex: 1.4, height: 50, borderRadius: 'var(--shape-full)',
+            background: 'var(--md-primary)', color: 'var(--md-on-primary)',
+            border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+            fontSize: 15, fontWeight: 600,
+          }}>Criar conta</button>
+        </div>
       </div>
 
-      {/* Skip for now */}
-      <button
-        onClick={() => {
-          // Allow browsing without auth (read-only mode)
-          window.dispatchEvent(new CustomEvent('wc-skip-auth'));
-        }}
-        style={{
-          marginTop: 24, background: 'none', border: 'none',
-          color: 'var(--md-on-surface-variant)', fontSize: 14,
-          cursor: 'pointer', fontFamily: 'inherit',
-          textDecoration: 'underline', textUnderlineOffset: 3,
-        }}
-      >
-        Browse without account
-      </button>
+      <AuthSheet modo={modo} onTrocarModo={setModo}
+        onFechar={() => setModo(null)} destino={destino} />
     </div>
   );
 };

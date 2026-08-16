@@ -9,10 +9,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { to: '/',       label: 'Home',     icon: 'home',       iconFilled: 'home' },
-  { to: '/search', label: 'Discover', icon: 'search',     iconFilled: 'search' },
-  { to: '/clubs',  label: 'Clubs',    icon: 'group',      iconFilled: 'group' },
-  { to: '/profile',label: 'Profile',  icon: 'person',     iconFilled: 'person' },
+  { to: '/',       label: 'Início',     icon: 'home',       iconFilled: 'home' },
+  { to: '/clubs',  label: 'Clubes',    icon: 'group',      iconFilled: 'group' },
+  { to: '/profile',label: 'Perfil',  icon: 'person',     iconFilled: 'person' },
 ];
 
 export const BottomNav: React.FC = () => {
