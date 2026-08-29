@@ -10,10 +10,15 @@ jobs:
   auto-revert:
     if: ${{ github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.head_branch == 'main' }}
     runs-on: ubuntu-latest
+    # `workflows: write` não existe como escopo de permissions — e uma chave
+    # inválida aqui não é ignorada: derruba o workflow no carregamento. Era por
+    # isso que este arquivo aparecia como falha instantânea desde sempre, sem
+    # job nenhum e identificado pelo caminho em vez do nome. O protocolo T40
+    # nunca chegou a rodar uma vez.
     permissions:
       contents: write
-      workflows: write
       pull-requests: write
+      actions: read
 
     steps:
       - uses: actions/checkout@v4
