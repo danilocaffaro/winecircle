@@ -49,7 +49,7 @@ npm run pb:seed
 npm run test:e2e
 ```
 
-58 cenários de UI, executados em Pixel 7 e Desktop Chrome (116 execuções),
+61 cenários de UI, executados em Pixel 7 e Desktop Chrome (122 execuções),
 cobrindo as jornadas completas com um contexto de navegador por participante.
 Os detalhes estão em [test/PLANO-DE-TESTES.md](test/PLANO-DE-TESTES.md).
 

@@ -1,32 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getClub, joinClub, getCurrentUser, describeError } from '../services/pocketbase';
-import type { Club } from '../types';
+import { getInvite, joinClub, describeError } from '../services/pocketbase';
+import type { InvitePreview } from '../services/pocketbase';
 import { useAuth } from '../contexts/AuthContext';
 
 export const JoinClubPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [params] = useSearchParams();
+  // O segredo do convite viaja no link. Sem ele o id sozinho não abre nada:
+  // era exatamente isso que deixava qualquer conta entrar em qualquer clube.
+  const token = params.get('t') || '';
   const navigate = useNavigate();
   const { authenticated } = useAuth();
-  const [club, setClub] = useState<Club | null>(null);
+  const [club, setClub] = useState<InvitePreview | null>(null);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!id) return;
-    getClub(id)
+    if (!token) { setError('Convite incompleto'); setLoading(false); return; }
+    getInvite(id, token)
       .then(c => setClub(c))
-      .catch(() => setError('Clube não encontrado'))
+      .catch(() => setError('Convite inválido'))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, token]);
 
   const handleJoin = async () => {
     if (!id) return;
     setJoining(true);
     try {
-      await joinClub(id);
+      await joinClub(id, token);
       toast.success('Bem-vindo ao clube! 🍷');
       navigate(`/clubs/${id}`);
     } catch (err) {
@@ -63,28 +68,7 @@ export const JoinClubPage: React.FC = () => {
     );
   }
 
-  const currentUser = getCurrentUser();
-  const isMember = currentUser && (club.members || []).includes(currentUser.id);
-  const memberCount = (club.members || []).length;
-
-  if (isMember) {
-    return (
-      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-        <span className="material-symbols-rounded ms-filled" style={{ fontSize: 64, color: 'var(--md-primary)', display: 'block', marginBottom: 16 }}>check_circle</span>
-        <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 22, color: 'var(--md-on-surface)', marginBottom: 8 }}>
-          Você já é membro!
-        </h2>
-        <p style={{ fontSize: 14, color: 'var(--md-on-surface-variant)', marginBottom: 24 }}>
-          Você já faz parte do <strong>{club.name}</strong>.
-        </p>
-        <button onClick={() => navigate(`/clubs/${club.id}`)} style={{
-          background: 'var(--md-primary)', color: 'var(--md-on-primary)',
-          border: 'none', borderRadius: 'var(--shape-full)', padding: '12px 24px',
-          fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-        }}>Ver clube</button>
-      </div>
-    );
-  }
+  const memberCount = club.members;
 
   return (
     <div style={{ maxWidth: 400, margin: '0 auto', padding: '40px 20px', textAlign: 'center' }}>
@@ -122,7 +106,7 @@ export const JoinClubPage: React.FC = () => {
           <p style={{ fontSize: 14, color: 'var(--md-on-surface-variant)', marginBottom: 16 }}>
             Faça login ou crie uma conta para entrar no clube.
           </p>
-          <button onClick={() => navigate('/entrar', { state: { from: `/join/${id}` } })} style={{
+          <button onClick={() => navigate('/entrar', { state: { from: `/join/${id}?t=${token}` } })} style={{
             width: '100%', padding: '14px 0', borderRadius: 'var(--shape-full)',
             background: 'var(--md-primary)', border: 'none',
             color: 'var(--md-on-primary)', fontSize: 15, fontWeight: 600,

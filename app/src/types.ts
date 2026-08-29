@@ -85,6 +85,9 @@ export interface Club extends PBRecord {
   owner: string;      // id de usuário
   members: string[];  // ids de usuário
   image_url?: string;
+  /** Segredo do link de convite. Só chega a dono e membros: a regra de leitura
+   *  de wc_clubs fecha em dono-ou-membro desde a migration 1786900000. */
+  invite_token?: string;
 }
 
 // ── Eventos ──

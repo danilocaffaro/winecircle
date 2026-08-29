@@ -11,12 +11,17 @@ import {
  * escrita no clube inteiro).
  */
 test.describe('Cenário 2 — Clube e convite', () => {
-  let carlos, marina, clubId;
+  let carlos, marina, intruso, clubId;
+
+  /** O segredo do convite. Só o admin lê direto; a UI recebe pelo link. */
+  const tokenDoClube = async () =>
+    (await listRecords('wc_clubs', `id = "${clubId}"`))[0].invite_token;
 
   test.beforeAll(async () => {
     await resetDatabase();
     carlos = await createUser({ email: uniqueEmail('carlos'), name: 'Carlos Mendes' });
     marina = await createUser({ email: uniqueEmail('marina'), name: 'Marina Silva' });
+    intruso = await createUser({ email: uniqueEmail('intruso'), name: 'Quem Não Foi Convidado' });
   });
 
   test('dono cria o clube e aparece como membro', async ({ page }) => {
@@ -42,7 +47,7 @@ test.describe('Cenário 2 — Clube e convite', () => {
     const { context, page } = await newPersonContext(browser);
     await loginAs(page, marina);
 
-    await page.goto(`/join/${clubId}`);
+    await page.goto(`/join/${clubId}?t=${await tokenDoClube()}`);
     await expect(page.getByRole('heading', { name: /Confraria da Quinta/ })).toBeVisible();
 
     await page.getByRole('button', { name: /entrar no clube/i }).click();
@@ -52,6 +57,64 @@ test.describe('Cenário 2 — Clube e convite', () => {
     expect(clubs[0].members).toContain(marina.id);
     expect(clubs[0].members).toContain(carlos.id);
 
+    await context.close();
+  });
+
+  test('o id do clube sozinho não abre o convite', async ({ browser }) => {
+    // O link era `/join/<id>` e o id não era segredo: wc_clubs ficava legível
+    // para qualquer autenticado, então listar todos os clubes e entrar em cada
+    // um eram duas requisições.
+    const { context, page } = await newPersonContext(browser);
+    await loginAs(page, intruso);
+
+    await page.goto(`/join/${clubId}`);
+    await expect(page.getByText(/Link inválido|Convite/i).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /entrar no clube/i })).toHaveCount(0);
+
+    const clubs = await listRecords('wc_clubs', `id = "${clubId}"`);
+    expect(clubs[0].members).not.toContain(intruso.id);
+
+    await context.close();
+  });
+
+  test('token errado é recusado pela API', async ({ browser }) => {
+    const { context, page } = await newPersonContext(browser);
+    await loginAs(page, intruso);
+
+    const status = await page.evaluate(async ({ id, tok }) => {
+      const raw = localStorage.getItem('pocketbase_auth');
+      const token = raw ? JSON.parse(raw).token : '';
+      const res = await fetch(`${window.__PB_URL__ || 'http://127.0.0.1:8091'}/api/wc/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: token },
+        body: JSON.stringify({ club: id, token: tok }),
+      });
+      return res.status;
+    }, { id: clubId, tok: 'x'.repeat(24) });
+
+    expect(status).toBe(403);
+    const clubs = await listRecords('wc_clubs', `id = "${clubId}"`);
+    expect(clubs[0].members).not.toContain(intruso.id);
+
+    await context.close();
+  });
+
+  test('sem convite, o clube nem aparece na listagem', async ({ browser }) => {
+    // A contrapartida do token: a regra de leitura pôde fechar em dono-ou-membro.
+    // É isto que tira os ids de circulação.
+    const { context, page } = await newPersonContext(browser);
+    await loginAs(page, intruso);
+
+    const visiveis = await page.evaluate(async () => {
+      const raw = localStorage.getItem('pocketbase_auth');
+      const token = raw ? JSON.parse(raw).token : '';
+      const res = await fetch(`${window.__PB_URL__ || 'http://127.0.0.1:8091'}/api/collections/wc_clubs/records?perPage=200`, {
+        headers: { Authorization: token },
+      });
+      return (await res.json()).totalItems;
+    });
+
+    expect(visiveis).toBe(0);
     await context.close();
   });
 

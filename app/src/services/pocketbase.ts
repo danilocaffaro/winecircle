@@ -151,10 +151,38 @@ export const deleteClub = (id: string) => pb.collection('wc_clubs').delete(id);
  * escrever `members` podia também renomear ou excluir o clube. A rota
  * adiciona só quem chamou, e o clube fica travado no dono.
  */
-export async function joinClub(clubId: string): Promise<Club> {
-  await pb.send('/api/wc/join', { method: 'POST', body: { club: clubId } });
+export async function joinClub(clubId: string, token: string): Promise<Club> {
+  await pb.send('/api/wc/join', { method: 'POST', body: { club: clubId, token } });
   return getClub(clubId);
 }
+
+/** O que a tela de convite mostra antes de a pessoa entrar. */
+export interface InvitePreview {
+  id: string;
+  name: string;
+  description: string;
+  members: number;
+}
+
+/**
+ * Lê o clube por trás de um convite sem ser membro dele.
+ *
+ * `getClub` não serve aqui: desde a migration 1786900000 a leitura de
+ * `wc_clubs` fecha em dono-ou-membro, justamente para que os ids dos clubes
+ * deixassem de ser listáveis por qualquer conta. Quem chega pelo link ainda
+ * está de fora — quem autoriza é o token, não a sessão.
+ */
+export async function getInvite(clubId: string, token: string): Promise<InvitePreview> {
+  const r = await pb.send<{ club: InvitePreview }>(
+    `/api/wc/invite?club=${encodeURIComponent(clubId)}&t=${encodeURIComponent(token)}`,
+    { method: 'GET' },
+  );
+  return r.club;
+}
+
+/** O link que se manda para alguém entrar. Sem o token, o id sozinho não vale. */
+export const inviteLink = (club: Pick<Club, 'id' | 'invite_token'>) =>
+  `${window.location.origin}/join/${club.id}?t=${club.invite_token ?? ''}`;
 
 export async function leaveClub(clubId: string): Promise<void> {
   await pb.send('/api/wc/leave', { method: 'POST', body: { club: clubId } });

@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { formatEventDate } from '../utils/algorithms';
 import toast from 'react-hot-toast';
 import {
-  getClub, deleteClub, getEvents, joinClub,
+  getClub, deleteClub, getEvents, inviteLink,
   getCurrentUser, getMembers, describeError,
 } from '../services/pocketbase';
 import type { Member, Club, TastingEvent } from '../types';
@@ -53,20 +53,6 @@ export const ClubDetail: React.FC = () => {
     }
   };
 
-  const handleJoin = async () => {
-    if (!id) return;
-    try {
-      const updated = await joinClub(id);
-      setClub(updated);
-      // Reload members
-      const memberIds: string[] = updated.members || [];
-      setMembers(await getMembers(memberIds));
-      toast.success('Bem-vindo ao clube!');
-    } catch (err) {
-      toast.error(describeError(err));
-    }
-  };
-
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
@@ -108,7 +94,7 @@ export const ClubDetail: React.FC = () => {
         <div className="flex gap-1 shrink-0">
           {isMember && (
             <button onClick={() => {
-              const url = `${window.location.origin}/join/${club.id}`;
+              const url = inviteLink(club);
               if (navigator.share) {
                 navigator.share({ title: `Entrar no ${club.name}`, text: `Venha participar do clube de vinhos ${club.name}!`, url });
               } else {
@@ -132,13 +118,9 @@ export const ClubDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* Join button if not member */}
-      {!isMember && currentUser && (
-        <button onClick={handleJoin} className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
-          <span className="material-symbols-rounded" style={{ fontSize: 20 }}>person_add</span>
-          Entrar no Clube
-        </button>
-      )}
+      {/* Entrar no clube acontece só pela tela de convite (/join/:id?t=...):
+          desde a migration 1786900000 quem não é membro nem consegue ler o
+          clube, então um botão aqui nunca chegaria a aparecer. */}
 
       {/* Stats */}
       {completedEvents.length > 0 && (

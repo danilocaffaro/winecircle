@@ -41,13 +41,14 @@ observa o diretório e reinicia sozinho ao detectar mudança.
 
 | Arquivo | O que faz |
 |---|---|
-| `club_membership.pb.js` | `POST /api/wc/join` e `/leave` — entrar num clube sem dar permissão de escrita no clube inteiro |
+| `club_membership.pb.js` | `POST /api/wc/join` e `/leave` — entrar num clube sem dar permissão de escrita no clube inteiro. `GET /api/wc/invite` serve a tela de convite mediante token |
 | `wine_search.pb.js` | `/api/wc/wine-suggest` e `/wine-resolve` — catálogo primeiro, LLM só no que faltar |
 | `llm_provider.js` | Provedor plugável (qualquer endpoint compatível com OpenAI) |
 | `expense_settle.pb.js` | Reconcilia `wc_payments` a partir do rateio da despesa |
 | `payment_pix.pb.js` | Preenche a chave Pix do credor no pagamento |
 | `payment_push.pb.js` | Enfileira notificações de mudança de status |
 | `capabilities.pb.js` | `GET /api/wc/capabilities` — diz ao cliente se a busca por IA está disponível |
+| `lib_convite.js` | Compara o token do convite, em tempo constante |
 | `lib_settle.js` | Módulo compartilhado (não é `.pb.js`, logo não é carregado como hook) |
 
 **Armadilha do JSVM:** cada handler roda em escopo isolado e não enxerga funções
@@ -101,7 +102,7 @@ E abra http://localhost:8090/_/
 ## Deploy
 
 Automático não está ligado: `deploy.yml` roda por `workflow_dispatch`. O CI
-(build + lint + type check + 64 cenários de UI) roda em todo push e PR.
+(build + lint + type check + 122 execuções de UI) roda em todo push e PR.
 
 ```bash
 gh workflow run deploy.yml
@@ -160,12 +161,13 @@ permissão de exclusão do clube, onde não havia falha nenhuma.
 
 ## Regras de acesso
 
-Definidas em `pb_migrations/1786794204_lock_write_rules.js`. O princípio:
+Escrita em `pb_migrations/1786794204_lock_write_rules.js`; a leitura de
+`wc_clubs` fechou depois, em `1786900000_convite_com_token.js`. O princípio:
 **escrita é do dono, leitura é de quem participa.**
 
 | Collection | Ler | Escrever |
 |---|---|---|
-| `wc_clubs` | qualquer autenticado (o convite precisa mostrar o clube) | só o dono |
+| `wc_clubs` | dono e membros | só o dono |
 | `wc_events` | membros do clube | quem criou |
 | `wc_ratings` | membros do clube | só as próprias notas |
 | `wc_expenses` | membros do clube | quem lançou |
@@ -179,12 +181,35 @@ então e-mail e chave Pix não vazam. A chave chega a quem precisa por outro
 caminho: o servidor copia a do credor para o registro de pagamento, que só
 devedor e credor leem.
 
+## Convite
+
+O link é `/join/<id do clube>?t=<token>`. O token é `invite_token`, 24
+caracteres gerados pelo `autogeneratePattern` do próprio schema.
+
+Antes o link era só `/join/<id>`, e o id não era segredo: `wc_clubs` tinha
+`listRule: "@request.auth.id != \"\""`, então qualquer conta listava todos os
+clubes com seus ids, e `/api/wc/join` aceitava qualquer id sem perguntar de onde
+ele veio. Entrar em todos os clubes da instância eram duas requisições — e ser
+membro dá leitura de eventos, notas e despesas.
+
+A regra estava aberta por um motivo real: a tela de convite precisa mostrar o
+clube a quem ainda está de fora. Quem faz isso agora é `GET /api/wc/invite`, que
+roda com privilégio, exige o token e devolve só nome, descrição e contagem —
+nunca a lista de membros nem o próprio token. Não exige autenticação de
+propósito: quem abre o link ainda não entrou, e o segredo é o token, não a
+sessão.
+
+A comparação é de tempo constante (`lib_convite.js`). Clube sem token é convite
+inválido, nunca "qualquer um entra": o campo é opcional no schema, porque
+adicionar coluna obrigatória a uma collection com registros existentes falharia.
+
+Não há rotação pela interface ainda. Para invalidar os links de um clube, troque
+o `invite_token` pelo painel de administração.
+
 ## Conhecido / pendente
 
 - Cache do Cloudflare: o token disponível é só de analytics e não purga. O
   service worker é registrado como `/sw.js?v=N` (ver `SW_VERSION` em
   `app/src/App.tsx`) justamente por isso — **suba o número ao mexer em sw.js**.
-- O link de convite é o próprio id do clube, visível a qualquer autenticado que
-  liste os clubes. Um token de convite tornaria o link um segredo de verdade.
 - Push notifications não são cobertas por teste automatizado.
 - Backup do `pb_data` ainda é manual.
