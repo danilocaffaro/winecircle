@@ -108,9 +108,33 @@ Automático não está ligado: `deploy.yml` roda por `workflow_dispatch`. O CI
 gh workflow run deploy.yml
 ```
 
-Ou manualmente, a partir da máquina de desenvolvimento:
+O workflow publica **backend antes de frontend**: backup do `pb_data` (mantendo
+os 5 últimos), sincroniza `pb_migrations/` e `pb_hooks/`, reinicia o PocketBase,
+confere que ele voltou e que os hooks carregaram — e só então ativa o `dist/`.
+
+Ele publicava só o `dist/` até 29/08/2026. Hooks e migrations iam à mão, e nada
+garantia que fossem juntos: um deploy de frontend depois de uma mudança de
+backend entregava um app chamando rota que o servidor não tinha.
+
+`pb_migrations/` sincroniza **sem** `--delete` — apagar o arquivo de uma
+migration já aplicada não a desfaz, só destrói o registro do que foi aplicado.
+`pb_hooks/` sincroniza **com** `--delete`: aqui o repositório é a fonte da
+verdade, e um hook removido daqui que continuasse no servidor seguiria
+atendendo rota. Se houver migration só no servidor, o deploy avisa (e não
+bloqueia) para você trazê-la ao repositório.
+
+**Os secrets `DEPLOY_SSH_KEY`, `DEPLOY_HOST` e `DEPLOY_USER` ainda não existem
+no repositório público** — ficaram no antigo, na migração que tirou do histórico
+a chave de API que não podia ser revogada. Até recriá-los com `gh secret set`,
+o workflow falha no `Setup SSH` e o caminho é o manual abaixo.
+
+Manualmente, a partir da máquina de desenvolvimento — backend primeiro:
 
 ```bash
+scp pb_migrations/*.js oracle:/home/ubuntu/pocketbase/pb_migrations/
+scp pb_hooks/*.js oracle:/home/ubuntu/pocketbase/pb_hooks/
+ssh oracle 'sudo systemctl restart winecircle-pb.service'
+
 cd app && npm run build
 rsync -az --delete dist/ oracle:/tmp/winecircle-staging/
 ssh oracle 'sudo /usr/local/bin/winecircle-deploy-activate.sh'

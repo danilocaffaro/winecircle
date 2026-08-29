@@ -1,3 +1,14 @@
+# Publica o backend (hooks + migrations) e o frontend, nesta ordem.
+#
+# Secrets necessários — sem eles o passo "Setup SSH" falha:
+#   DEPLOY_SSH_KEY   chave privada com acesso ao servidor
+#   DEPLOY_HOST      64.181.171.133
+#   DEPLOY_USER      ubuntu
+#
+# Eles não acompanham o repositório: quando o WineCircle migrou para um
+# repositório novo (para tirar do histórico uma chave de API que não podia ser
+# revogada), os secrets ficaram no antigo. Recrie com `gh secret set`.
+
 name: Build & Deploy
 
 on:
@@ -90,6 +101,93 @@ jobs:
           echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      # ── Backend antes do frontend ──
+      #
+      # Este workflow publicava só o `dist/`. Hooks e migrations iam à mão pelo
+      # runbook, e nada garantia que fossem juntos — um deploy de frontend
+      # depois de uma mudança de backend entregava um app que chama rota que o
+      # servidor não tem. Foi o que quase aconteceu no convite com token:
+      # a tela de convite teria quebrado para todo mundo enquanto o buraco que
+      # ela fecha continuava aberto.
+      #
+      # Backend primeiro é a ordem certa. O inverso deixaria o frontend novo
+      # falando com um servidor velho; nesta ordem, a janela é um frontend
+      # velho contra um backend novo, que degrada em vez de quebrar.
+
+      - name: Backup do pb_data antes das migrations
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} '
+            set -e
+            mkdir -p /home/ubuntu/backups
+            tar czf /home/ubuntu/backups/pb_data-$(date +%Y%m%d-%H%M%S)-predeploy.tar.gz \
+              -C /home/ubuntu/pocketbase pb_data
+            # Guarda os 5 mais recentes: cada um passa de 50 MB e o disco vive perto do limite
+            ls -1t /home/ubuntu/backups/pb_data-*-predeploy.tar.gz | tail -n +6 | xargs -r rm -f
+            echo "✅ backup: $(ls -1t /home/ubuntu/backups/pb_data-*-predeploy.tar.gz | head -1)"
+            df -h /home/ubuntu | tail -1
+          '
+
+      - name: Conferir divergência de schema
+        run: |
+          # O PocketBase grava em pb_migrations/ a migration equivalente a
+          # qualquer edição feita pelo painel de administração. Se ela existir
+          # só no servidor, o repositório deixou de reproduzir a produção — que
+          # foi como o campo `participants` sumiu sem ninguém ver.
+          #
+          # Avisa, não bloqueia: a divergência não piora com este deploy, e um
+          # bloqueio aqui pararia entregas de frontend por um problema de outro
+          # caminho — o tipo de guarda que acaba desativada.
+          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            'ls -1 /home/ubuntu/pocketbase/pb_migrations/' | sort > /tmp/remotas.txt
+          ls -1 pb_migrations/ | sort > /tmp/locais.txt
+          SO_NO_SERVIDOR=$(comm -13 /tmp/locais.txt /tmp/remotas.txt)
+          if [ -n "$SO_NO_SERVIDOR" ]; then
+            echo "::warning::Migrations que só existem no servidor — traga-as para o repositório:"
+            echo "$SO_NO_SERVIDOR"
+          else
+            echo "✅ schema do repositório e do servidor conferem"
+          fi
+
+      - name: Sincronizar hooks e migrations
+        run: |
+          # Migrations sem --delete: apagar o arquivo de uma migration já
+          # aplicada não a desfaz, só destrói o registro do que foi aplicado.
+          rsync -az \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new" \
+            pb_migrations/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/home/ubuntu/pocketbase/pb_migrations/
+
+          # Hooks com --delete: o repositório é a fonte da verdade, e um hook
+          # removido daqui que continuasse no servidor seguiria atendendo rota.
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new" \
+            pb_hooks/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/home/ubuntu/pocketbase/pb_hooks/
+
+      - name: Reiniciar PocketBase e aplicar migrations
+        run: |
+          # As migrations pendentes são aplicadas na subida. O PocketBase também
+          # reinicia sozinho ao ver mudança em pb_hooks/, mas depender disso
+          # deixaria o momento da aplicação indefinido.
+          ssh -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            'sudo systemctl restart winecircle-pb.service'
+
+          for i in $(seq 1 20); do
+            CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
+              https://winecircle.melhor.dev/pb/api/health || echo 000)
+            [ "$CODE" = "200" ] && { echo "✅ PocketBase de pé (tentativa $i)"; break; }
+            sleep 3
+          done
+          if [ "$CODE" != "200" ]; then
+            echo "❌ PocketBase não voltou (HTTP $CODE). Backend possivelmente quebrado — não publique o frontend."
+            exit 1
+          fi
+
+          # Hooks carregados? capabilities é servido por um deles; se o JSVM
+          # engasgou num arquivo, a rota some e o 404 aparece aqui, não no
+          # primeiro usuário.
+          CAPS=$(curl -s --max-time 10 https://winecircle.melhor.dev/pb/api/wc/capabilities)
+          echo "$CAPS" | grep -q '"catalog"' || { echo "❌ hooks não carregaram: $CAPS"; exit 1; }
+          echo "✅ hooks carregados: $CAPS"
 
       - name: Deploy via rsync
         run: |
