@@ -95,6 +95,15 @@ jobs:
           done
           ./pocketbase superuser upsert test@local.dev "TesteLocal2026!" --dir=./pb_data
 
+      # Sem catálogo o autocomplete não devolve nada, e a falha não aparece
+      # onde nasce: o cenário 2 quebrava esperando uma sugestão, o worker
+      # reiniciava, o `beforeAll` zerava o banco e o teste seguinte acusava
+      # uma falha de permissão que não existia.
+      - name: Semear o catálogo de teste
+        run: npm run pb:seed
+        env:
+          WC_TEST_PB_URL: http://127.0.0.1:8091
+
       - name: Subir o app
         run: |
           cd app && npx vite --port 5174 --host 127.0.0.1 &

@@ -140,6 +140,24 @@ Busca por substring sobre a coluna `search` (minúscula, sem acento): ~25 ms em
 245 mil linhas. Licenças: a parte `we` é CC BY-NC-SA (**não comercial**), a
 parte `rt` é CC BY 4.0. Se o Wine Circle virar produto pago, a parte `we` sai.
 
+No CI e no ambiente local o catálogo cheio é inviável (245 mil linhas, direto no
+SQLite, com o servidor parado). Ali entra o `semear-catalogo-teste.mjs`, que
+carrega 50 vinhos pela API em menos de um segundo:
+
+```bash
+npm run pb:seed
+```
+
+O fixture (`test/fixtures/catalogo-teste.jsonl`) tem só dados factuais —
+produtor, região, uva, safra. As notas de degustação dos datasets são a parte
+com licença restritiva e não entram no repositório.
+
+Isso não é cosmético: sem catálogo o autocomplete não devolve nada, e a falha
+não aparecia onde nascia. O cenário 2 quebrava esperando uma sugestão, o
+Playwright reiniciava o worker, o `beforeAll` rodava `resetDatabase()` de novo e
+o teste seguinte perdia o `clubId` — o que se manifestava como falha no teste de
+permissão de exclusão do clube, onde não havia falha nenhuma.
+
 ## Regras de acesso
 
 Definidas em `pb_migrations/1786794204_lock_write_rules.js`. O princípio:

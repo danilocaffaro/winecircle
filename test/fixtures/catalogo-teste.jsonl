@@ -1,0 +1,50 @@
+{"name":"Château Margaux 2009  Margaux","winery":"Château Margaux","grape":"Cabernet Sauvignon","country":"França","region":"Margaux","year":2009,"points":99,"price":1200,"type":"red"}
+{"name":"Château Margaux 2015  Margaux","winery":"Château Margaux","grape":"Cabernet Sauvignon","country":"França","region":"Margaux","year":2015,"points":98,"price":1100,"type":"red"}
+{"name":"Château Latour 2010  Pauillac","winery":"Château Latour","grape":"Cabernet Sauvignon","country":"França","region":"Pauillac","year":2010,"points":98,"price":950,"type":"red"}
+{"name":"Château Lafite Rothschild 2010  Pauillac","winery":"Château Lafite Rothschild","grape":"Cabernet Sauvignon","country":"França","region":"Pauillac","year":2010,"points":97,"price":1000,"type":"red"}
+{"name":"Château Haut-Brion 2009  Pessac-Léognan","winery":"Château Haut-Brion","grape":"Merlot","country":"França","region":"Pessac-Léognan","year":2009,"points":97,"price":880,"type":"red"}
+{"name":"Château d'Yquem 2011  Sauternes","winery":"Château d'Yquem","grape":"Sémillon","country":"França","region":"Sauternes","year":2011,"points":97,"price":600,"type":"dessert"}
+{"name":"Opus One 2015  Napa Valley","winery":"Opus One","grape":"Cabernet Sauvignon","country":"Estados Unidos","region":"Napa Valley","year":2015,"points":95,"price":380,"type":"red"}
+{"name":"Opus One 2012  Napa Valley","winery":"Opus One","grape":"Cabernet Sauvignon","country":"Estados Unidos","region":"Napa Valley","year":2012,"points":94,"price":350,"type":"red"}
+{"name":"Catena Malbec 2018  Mendoza","winery":"Bodega Catena Zapata","grape":"Malbec","country":"Argentina","region":"Mendoza","year":2018,"points":90,"price":25,"type":"red"}
+{"name":"Catena Zapata Malbec Argentino 2016  Mendoza","winery":"Bodega Catena Zapata","grape":"Malbec","country":"Argentina","region":"Mendoza","year":2016,"points":95,"price":120,"type":"red"}
+{"name":"Zuccardi Serie A Malbec Mendoza 2019  Mendoza","winery":"Familia Zuccardi","grape":"Malbec","country":"Argentina","region":"Mendoza","year":2019,"points":89,"price":18,"type":"red"}
+{"name":"Achaval Ferrer Malbec Mendoza 2017  Mendoza","winery":"Achaval Ferrer","grape":"Malbec","country":"Argentina","region":"Mendoza","year":2017,"points":91,"price":30,"type":"red"}
+{"name":"Trapiche Broquel Malbec 2018  Mendoza","winery":"Trapiche","grape":"Malbec","country":"Argentina","region":"Mendoza","year":2018,"points":87,"price":14,"type":"red"}
+{"name":"Sassicaia 2016  Bolgheri","winery":"Tenuta San Guido","grape":"Cabernet Sauvignon","country":"Itália","region":"Bolgheri","year":2016,"points":97,"price":300,"type":"red"}
+{"name":"Tignanello 2017  Toscana","winery":"Antinori","grape":"Sangiovese","country":"Itália","region":"Toscana","year":2017,"points":94,"price":140,"type":"red"}
+{"name":"Barolo Cannubi 2015  Piemonte","winery":"Paolo Scavino","grape":"Nebbiolo","country":"Itália","region":"Piemonte","year":2015,"points":94,"price":110,"type":"red"}
+{"name":"Brunello di Montalcino 2016  Toscana","winery":"Biondi-Santi","grape":"Sangiovese","country":"Itália","region":"Toscana","year":2016,"points":95,"price":180,"type":"red"}
+{"name":"Amarone della Valpolicella 2015  Veneto","winery":"Allegrini","grape":"Corvina","country":"Itália","region":"Veneto","year":2015,"points":93,"price":85,"type":"red"}
+{"name":"Chianti Classico Riserva 2018  Toscana","winery":"Castello di Ama","grape":"Sangiovese","country":"Itália","region":"Toscana","year":2018,"points":92,"price":45,"type":"red"}
+{"name":"Vega Sicilia Único 2011  Ribera del Duero","winery":"Vega Sicilia","grape":"Tempranillo","country":"Espanha","region":"Ribera del Duero","year":2011,"points":97,"price":450,"type":"red"}
+{"name":"Pingus 2016  Ribera del Duero","winery":"Dominio de Pingus","grape":"Tempranillo","country":"Espanha","region":"Ribera del Duero","year":2016,"points":96,"price":900,"type":"red"}
+{"name":"Rioja Gran Reserva 904 2011  Rioja","winery":"La Rioja Alta","grape":"Tempranillo","country":"Espanha","region":"Rioja","year":2011,"points":94,"price":70,"type":"red"}
+{"name":"Marqués de Riscal Reserva 2017  Rioja","winery":"Marqués de Riscal","grape":"Tempranillo","country":"Espanha","region":"Rioja","year":2017,"points":89,"price":22,"type":"red"}
+{"name":"Dom Pérignon 2012  Champagne","winery":"Moët & Chandon","grape":"Chardonnay","country":"França","region":"Champagne","year":2012,"points":96,"price":220,"type":"sparkling"}
+{"name":"Krug Grande Cuvée  Champagne","winery":"Krug","grape":"Chardonnay","country":"França","region":"Champagne","year":2015,"points":96,"price":250,"type":"sparkling"}
+{"name":"Bollinger La Grande Année 2014  Champagne","winery":"Bollinger","grape":"Pinot Noir","country":"França","region":"Champagne","year":2014,"points":95,"price":180,"type":"sparkling"}
+{"name":"Chablis Grand Cru Les Clos 2018  Borgonha","winery":"William Fèvre","grape":"Chardonnay","country":"França","region":"Borgonha","year":2018,"points":94,"price":95,"type":"white"}
+{"name":"Puligny-Montrachet 2018  Borgonha","winery":"Domaine Leflaive","grape":"Chardonnay","country":"França","region":"Borgonha","year":2018,"points":94,"price":160,"type":"white"}
+{"name":"Gevrey-Chambertin 2017  Borgonha","winery":"Domaine Armand Rousseau","grape":"Pinot Noir","country":"França","region":"Borgonha","year":2017,"points":95,"price":320,"type":"red"}
+{"name":"Sancerre Les Monts Damnés 2019  Vale do Loire","winery":"Henri Bourgeois","grape":"Sauvignon Blanc","country":"França","region":"Vale do Loire","year":2019,"points":91,"price":38,"type":"white"}
+{"name":"Châteauneuf-du-Pape 2016  Vale do Rhône","winery":"Château de Beaucastel","grape":"Grenache","country":"França","region":"Vale do Rhône","year":2016,"points":95,"price":120,"type":"red"}
+{"name":"Côte-Rôtie La Landonne 2015  Vale do Rhône","winery":"E. Guigal","grape":"Syrah","country":"França","region":"Vale do Rhône","year":2015,"points":97,"price":400,"type":"red"}
+{"name":"Penfolds Grange 2016  South Australia","winery":"Penfolds","grape":"Shiraz","country":"Austrália","region":"South Australia","year":2016,"points":97,"price":700,"type":"red"}
+{"name":"Henschke Hill of Grace 2015  Eden Valley","winery":"Henschke","grape":"Shiraz","country":"Austrália","region":"Eden Valley","year":2015,"points":96,"price":650,"type":"red"}
+{"name":"Cloudy Bay Sauvignon Blanc 2021  Marlborough","winery":"Cloudy Bay","grape":"Sauvignon Blanc","country":"Nova Zelândia","region":"Marlborough","year":2021,"points":90,"price":32,"type":"white"}
+{"name":"Screaming Eagle 2014  Napa Valley","winery":"Screaming Eagle","grape":"Cabernet Sauvignon","country":"Estados Unidos","region":"Napa Valley","year":2014,"points":98,"price":3500,"type":"red"}
+{"name":"Ridge Monte Bello 2016  Santa Cruz Mountains","winery":"Ridge Vineyards","grape":"Cabernet Sauvignon","country":"Estados Unidos","region":"Santa Cruz Mountains","year":2016,"points":95,"price":230,"type":"red"}
+{"name":"Caymus Cabernet Sauvignon 2019  Napa Valley","winery":"Caymus Vineyards","grape":"Cabernet Sauvignon","country":"Estados Unidos","region":"Napa Valley","year":2019,"points":92,"price":90,"type":"red"}
+{"name":"Almaviva 2018  Puente Alto","winery":"Viña Almaviva","grape":"Cabernet Sauvignon","country":"Chile","region":"Puente Alto","year":2018,"points":95,"price":150,"type":"red"}
+{"name":"Don Melchor Cabernet Sauvignon 2018  Puente Alto","winery":"Concha y Toro","grape":"Cabernet Sauvignon","country":"Chile","region":"Puente Alto","year":2018,"points":94,"price":95,"type":"red"}
+{"name":"Montes Alpha Carmenere 2019  Colchagua","winery":"Montes","grape":"Carmenere","country":"Chile","region":"Colchagua","year":2019,"points":90,"price":24,"type":"red"}
+{"name":"Quinta do Noval Vintage Port 2017  Douro","winery":"Quinta do Noval","grape":"Touriga Nacional","country":"Portugal","region":"Douro","year":2017,"points":96,"price":140,"type":"dessert"}
+{"name":"Barca Velha 2011  Douro","winery":"Casa Ferreirinha","grape":"Touriga Nacional","country":"Portugal","region":"Douro","year":2011,"points":95,"price":250,"type":"red"}
+{"name":"Pêra-Manca Tinto 2015  Alentejo","winery":"Fundação Eugénio de Almeida","grape":"Aragonez","country":"Portugal","region":"Alentejo","year":2015,"points":94,"price":180,"type":"red"}
+{"name":"Miolo Lote 43 2018  Vale dos Vinhedos","winery":"Miolo","grape":"Merlot","country":"Brasil","region":"Vale dos Vinhedos","year":2018,"points":90,"price":40,"type":"red"}
+{"name":"Casa Valduga Gran Reserva Chardonnay 2019  Vale dos Vinhedos","winery":"Casa Valduga","grape":"Chardonnay","country":"Brasil","region":"Vale dos Vinhedos","year":2019,"points":89,"price":35,"type":"white"}
+{"name":"Lidio Carraro Da Cor Tannat 2017  Serra Gaúcha","winery":"Lidio Carraro","grape":"Tannat","country":"Brasil","region":"Serra Gaúcha","year":2017,"points":88,"price":30,"type":"red"}
+{"name":"Egon Müller Scharzhofberger Riesling 2018  Mosel","winery":"Egon Müller","grape":"Riesling","country":"Alemanha","region":"Mosel","year":2018,"points":97,"price":500,"type":"white"}
+{"name":"Dr. Loosen Riesling Kabinett 2020  Mosel","winery":"Dr. Loosen","grape":"Riesling","country":"Alemanha","region":"Mosel","year":2020,"points":90,"price":25,"type":"white"}
+{"name":"Château Musar 2015  Vale do Beqaa","winery":"Château Musar","grape":"Cinsault","country":"Líbano","region":"Vale do Beqaa","year":2015,"points":92,"price":60,"type":"red"}

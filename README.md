@@ -36,15 +36,22 @@ Na primeira execução, crie o superusuário local:
 cd test/pb && ./pocketbase superuser upsert test@local.dev "TesteLocal2026!" --dir=./pb_data
 ```
 
+E semeie o catálogo de teste — sem ele o autocomplete não devolve nada e os
+cenários que passam pela busca de vinho falham:
+
+```bash
+npm run pb:seed
+```
+
 ## Testes
 
 ```bash
 npm run test:e2e
 ```
 
-64 cenários de UI em Pixel 7 e Desktop Chrome, cobrindo as jornadas completas com
-um contexto de navegador por participante. Os detalhes estão em
-[test/PLANO-DE-TESTES.md](test/PLANO-DE-TESTES.md).
+58 cenários de UI, executados em Pixel 7 e Desktop Chrome (116 execuções),
+cobrindo as jornadas completas com um contexto de navegador por participante.
+Os detalhes estão em [test/PLANO-DE-TESTES.md](test/PLANO-DE-TESTES.md).
 
 Os testes **recusam rodar** contra qualquer URL que não seja local — a suíte
 anterior rodava contra produção e criava usuários reais a cada execução.
@@ -55,6 +62,9 @@ Sem chave de API. Um catálogo local de **244.577 vinhos** (união de duas fonte
 abertas) alimenta o autocomplete e o preenchimento automático em ~25 ms. O que
 não está nele pode ser resolvido por um LLM opcional — qualquer endpoint
 compatível com a API da OpenAI — e o resultado é gravado de volta no catálogo.
+
+O catálogo cheio entra pelo `importar-catalogo.mjs`, com o PocketBase parado.
+Para desenvolver e testar basta o fixture de 50 vinhos do `pb:seed`.
 
 ## Como o modelo de dados funciona
 

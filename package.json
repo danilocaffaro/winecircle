@@ -5,6 +5,7 @@
   "scripts": {
     "pb:test": "cd test/pb && ./pocketbase serve --http=127.0.0.1:8091 --dir=./pb_data --hooksDir=../../pb_hooks --migrationsDir=../../pb_migrations",
     "pb:test:reset": "rm -rf test/pb/pb_data",
+    "pb:seed": "node scripts/semear-catalogo-teste.mjs",
     "dev": "cd app && npx vite --port 5174 --host 127.0.0.1",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

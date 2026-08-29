@@ -10,8 +10,10 @@ import {
  * Gemini que ficou pública dentro do bundle. Agora saem de um catálogo local
  * de ~245 mil vinhos, sem tocar em serviço externo.
  *
- * Estes testes pulam se o catálogo não estiver carregado — ele vem de um
- * import separado (scripts/importar-catalogo.mjs), não de uma migration.
+ * Estes testes pulam se o catálogo não estiver carregado — ele não vem de uma
+ * migration. Em produção entra pelo `importar-catalogo.mjs` (~245 mil linhas,
+ * direto no SQLite); no CI e no ambiente local, pelo `semear-catalogo-teste.mjs`
+ * (50 vinhos, pela API). O que importa aqui é ter catálogo, não o tamanho dele.
  */
 
 async function api(path, token, init = {}) {
@@ -38,7 +40,11 @@ test.describe('Cenário 6 — Catálogo local', () => {
 
     await adminAuth();
     const caps = await api('/api/wc/capabilities', token);
-    temCatalogo = (caps.body?.catalog || 0) > 1000;
+    // O corte era > 1000, herdado de quando o catálogo só existia no import de
+    // produção. Isso mantinha estes testes pulando para sempre no CI, que nunca
+    // carregava catálogo nenhum — e o cenário 2 quebrava por falta do mesmo
+    // dado, sem ninguém ver a relação.
+    temCatalogo = (caps.body?.catalog || 0) > 0;
   });
 
   test('o servidor informa o tamanho do catálogo e se há IA', async () => {

@@ -14,9 +14,13 @@ build/
 .cache/
 
 # Instância local de teste
+# O binário e o que vem junto no zip do PocketBase
 test/pb/pocketbase
 test/pb/pb_data/
 test/pb/pb.log
+test/pb/pb.zip
+test/pb/CHANGELOG.md
+test/pb/LICENSE.md
 test-results/
 test/report/
 playwright-report/
