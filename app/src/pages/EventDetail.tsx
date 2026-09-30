@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { formatEventDate } from '../utils/algorithms';
+import { formatEventDate, blindLabel } from '../utils/algorithms';
 import toast from 'react-hot-toast';
-import { getEvent, getClub, updateEvent, getMembers, describeError } from '../services/pocketbase';
+import { getEvent, getClub, updateEvent, getMembers, describeError, getCurrentUser } from '../services/pocketbase';
 import { WineCard } from '../components/WineCard';
 import type { Member, Club, TastingEvent } from '../types';
 
@@ -143,7 +143,7 @@ export const EventDetail: React.FC = () => {
               key={wine.id}
               wine={wine}
               blind={event.type === 'blind' && status !== 'completed'}
-              blindLabel={`Wine ${String.fromCharCode(65 + i)}`}
+              blindLabel={blindLabel(i)}
             />
           ))}
         </div>
@@ -151,7 +151,7 @@ export const EventDetail: React.FC = () => {
 
       {/* Actions */}
       <div className="space-y-3">
-        {status === 'upcoming' && (
+        {status === 'upcoming' && event.created_by === getCurrentUser()?.id && (
           <>
             <button onClick={startTasting} data-testid="start-tasting" className="btn-primary w-full" style={{ height: 48, borderRadius: 'var(--shape-large)' }}>
               <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>wine_bar</span>

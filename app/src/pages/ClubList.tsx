@@ -1,12 +1,15 @@
+import { LoadError } from '../components/LoadError';
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getMyClubs, getEvents } from '../services/pocketbase';
+import { getMyClubs, getEvents, describeError } from '../services/pocketbase';
 import type { Club } from '../types';
 
 export const ClubList: React.FC = () => {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [eventCounts, setEventCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -23,20 +26,22 @@ export const ClubList: React.FC = () => {
         }));
         setEventCounts(counts);
       } catch (err) {
-        console.error(err);
+        setLoadError(describeError(err));
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [retry]);
 
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-        <div className="w-8 h-8 border-3 border-current/30 border-t-current rounded-full animate-spin" style={{ color: 'var(--dp-gold)' }} />
+        <div className="w-8 h-8 border-3 border-current/30 border-t-current rounded-full animate-spin" style={{ color: 'var(--md-primary)' }} />
       </div>
     );
   }
+
+  if (loadError) return <LoadError message={loadError} onRetry={() => { setLoadError(''); setLoading(true); setRetry(retry + 1); }} />;
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
@@ -53,7 +58,7 @@ export const ClubList: React.FC = () => {
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '8px 18px', height: 40,
             borderRadius: 'var(--shape-full)',
-            background: 'var(--dp-gold)',
+            background: 'var(--md-primary)',
             color: 'var(--md-on-primary)',
             fontSize: 13, fontWeight: 600,
             textDecoration: 'none',
@@ -61,7 +66,7 @@ export const ClubList: React.FC = () => {
           }}
         >
           <span className="material-symbols-rounded" style={{ fontSize: 18 }}>add</span>
-          New Club
+          Novo clube
         </Link>
       </div>
 
@@ -78,7 +83,7 @@ export const ClubList: React.FC = () => {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             marginBottom: 24,
           }}>
-            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 36, color: 'var(--dp-gold)', opacity: 0.8 }}>
+            <span className="material-symbols-rounded ms-filled" style={{ fontSize: 36, color: 'var(--md-primary)', opacity: 0.8 }}>
               diversity_3
             </span>
           </div>
@@ -89,7 +94,7 @@ export const ClubList: React.FC = () => {
             color: 'var(--dp-cream)',
             marginBottom: 8,
           }}>
-            Start your first club
+            Crie seu primeiro clube
           </h3>
 
           <p style={{
@@ -97,7 +102,7 @@ export const ClubList: React.FC = () => {
             color: 'var(--dp-cream-muted)',
             maxWidth: 280, marginBottom: 8,
           }}>
-            A wine club is a group of friends who taste blind together. No pretension — just honest opinions.
+            Reúna os amigos para degustar às cegas e descobrir seus vinhos favoritos.
           </p>
 
           <p style={{
@@ -115,7 +120,7 @@ export const ClubList: React.FC = () => {
               display: 'inline-flex', alignItems: 'center', gap: 8,
               padding: '12px 28px',
               borderRadius: 'var(--shape-full)',
-              background: 'var(--dp-gold)',
+              background: 'var(--md-primary)',
               color: 'var(--md-on-primary)',
               fontSize: 15, fontWeight: 600,
               textDecoration: 'none',
@@ -123,7 +128,7 @@ export const ClubList: React.FC = () => {
             }}
           >
             <span className="material-symbols-rounded" style={{ fontSize: 20 }}>add</span>
-            Criar Clube
+            Criar clube
           </Link>
 
           <div style={{
@@ -134,15 +139,15 @@ export const ClubList: React.FC = () => {
             maxWidth: 320,
           }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-              <span className="material-symbols-rounded" style={{ fontSize: 20, color: 'var(--dp-gold)', flexShrink: 0, marginTop: 2 }}>
+              <span className="material-symbols-rounded" style={{ fontSize: 20, color: 'var(--md-primary)', flexShrink: 0, marginTop: 2 }}>
                 lightbulb
               </span>
               <div>
                 <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--dp-cream)', marginBottom: 4 }}>
-                  How it works
+                  Como funciona
                 </p>
                 <p style={{ fontSize: 12, color: 'var(--dp-cream-faint)', lineHeight: 1.5 }}>
-                  Create a club → Add friends → Schedule a blind tasting → Everyone scores each wine → Reveal the winner
+                  Crie um clube → Convide os amigos → Marque uma degustação → Cada pessoa envia seu ranking → Revelem o resultado
                 </p>
               </div>
             </div>
@@ -173,7 +178,7 @@ export const ClubList: React.FC = () => {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                 }}>
-                  <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--dp-gold)' }}>
+                  <span className="material-symbols-rounded ms-filled" style={{ fontSize: 24, color: 'var(--md-primary)' }}>
                     group
                   </span>
                 </div>

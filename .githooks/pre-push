@@ -1,0 +1,11 @@
+#!/bin/sh
+# Portao de verificacao. Roda a metade rapida do CI antes de qualquer push.
+# A suite e2e NAO roda aqui de proposito: ela sobe PocketBase e Playwright, e
+# travar cada push nisso e atrito. Rode `npm run test:e2e` antes de abrir o PR.
+#
+# Nunca use `git push --no-verify`. Se o portao esta te bloqueando, o portao
+# esta certo e o codigo esta errado.
+set -e
+echo "→ verify (lint + build + assercoes)…"
+npm run verify
+echo "✓ portao passou"

@@ -107,8 +107,8 @@ export const DesktopSidebar: React.FC = () => {
             </span>
           </div>
           <div>
-            <p className="text-xs font-medium" style={{ color: 'var(--md-on-surface)' }}>Wine Enthusiast</p>
-            <p className="text-[10px]" style={{ color: 'var(--md-on-surface-variant)' }}>Wine Circle v10.1</p>
+            <p className="text-xs font-medium" style={{ color: 'var(--md-on-surface)' }}>Degustações com amigos</p>
+            <p className="text-[10px]" style={{ color: 'var(--md-on-surface-variant)' }}>Wine Circle</p>
           </div>
         </div>
       </div>

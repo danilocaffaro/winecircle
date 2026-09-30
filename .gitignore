@@ -8,7 +8,7 @@ app/.env.development
 # app/.env.production é versionado de propósito: só contém valores públicos
 
 # Dependências e build
-node_modules/
+node_modules
 dist/
 build/
 .cache/
@@ -24,6 +24,7 @@ test/pb/LICENSE.md
 test-results/
 test/report/
 playwright-report/
+test/visual-checks/
 
 # OS
 .DS_Store

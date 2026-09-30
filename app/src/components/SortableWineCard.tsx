@@ -35,7 +35,7 @@ export const SortableWineCard: React.FC<Props> = ({
 
   const arrowStyle = (disabled: boolean): React.CSSProperties => ({
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    width: 32, height: 28, padding: 0, border: 'none', background: 'none',
+    width: 44, height: 44, padding: 0, border: 'none', background: 'none',
     cursor: disabled ? 'default' : 'pointer',
     opacity: disabled ? 0.25 : 1,
     color: 'var(--md-on-surface-variant)',
@@ -49,7 +49,7 @@ export const SortableWineCard: React.FC<Props> = ({
             motora — e continua valendo para quem prefere arrastar. */}
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center',
-          flexShrink: 0, width: 32,
+          flexShrink: 0, width: 44,
         }}>
           <button type="button" disabled={isFirst} style={arrowStyle(isFirst)}
             data-testid={`move-up-${wineIndex}`}

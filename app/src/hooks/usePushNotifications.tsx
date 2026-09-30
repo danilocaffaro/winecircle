@@ -1,31 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
-import { savePushSubscription } from '../services/pocketbase';
+import { savePushSubscription, removePushSubscription } from '../services/pocketbase';
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
 export const usePushNotifications = () => {
-  const { authenticated } = useAuth();
+  const { authenticated, user } = useAuth();
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(
     () => ('Notification' in window ? Notification.permission : 'unsupported'),
   );
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
+  const [checked, setChecked] = useState(false);
 
+  useEffect(() => {
+    let active = true;
+    const get = async () => {
+      if (!authenticated || !('serviceWorker' in navigator)) return null;
+      const registration = await navigator.serviceWorker.getRegistration();
+      return await registration?.pushManager?.getSubscription() || null;
+    };
+    const refresh = () => { void get().catch(() => null).then((sub) => { if (active) { setSubscription(sub); setChecked(true); } }); };
+    refresh();
+    window.addEventListener('wc-push-change', refresh);
+    return () => { active = false; window.removeEventListener('wc-push-change', refresh); };
+  }, [authenticated, user?.id]);
 
   const requestPermission = async () => {
     if (!('Notification' in window)) {
-      toast.error('Push notifications not supported');
+      toast.error('Este navegador não oferece notificações');
       return false;
     }
 
     if (!('serviceWorker' in navigator)) {
-      toast.error('Service worker not supported');
+      toast.error('Este navegador não oferece notificações');
       return false;
     }
 
     if (!VAPID_PUBLIC_KEY) {
-      console.error('VAPID_PUBLIC_KEY not configured');
+      toast.error('As notificações ainda não estão configuradas neste ambiente');
       return false;
     }
 
@@ -34,21 +47,20 @@ export const usePushNotifications = () => {
       setPermission(perm);
 
       if (perm === 'granted') {
-        await subscribeToPush();
-        return true;
+        return await subscribeToPush();
       } else {
-        toast.error('Push notifications denied');
+        toast.error('As notificações foram bloqueadas');
         return false;
       }
     } catch (err) {
       console.error('Permission request failed:', err);
-      toast.error('Failed to request permission');
+      toast.error('Não foi possível pedir permissão');
       return false;
     }
   };
 
   const subscribeToPush = async () => {
-    if (!authenticated) return;
+    if (!authenticated) return false;
 
     try {
       const registration = await navigator.serviceWorker.ready;
@@ -67,10 +79,13 @@ export const usePushNotifications = () => {
       // Save to PocketBase
       await savePushSubscription(sub);
       setSubscription(sub);
-      toast.success('Push notifications enabled!');
+      window.dispatchEvent(new Event('wc-push-change'));
+      toast.success('Notificações ativadas');
+      return true;
     } catch (err) {
       console.error('Push subscription failed:', err);
-      toast.error('Failed to enable push');
+      toast.error('Não foi possível ativar as notificações');
+      return false;
     }
   };
 
@@ -78,9 +93,10 @@ export const usePushNotifications = () => {
     if (!subscription) return;
     
     try {
-      await subscription.unsubscribe();
+      await removePushSubscription();
       setSubscription(null);
-      toast.success('Push notifications disabled');
+      window.dispatchEvent(new Event('wc-push-change'));
+      toast.success('Notificações desativadas');
     } catch (err) {
       console.error('Unsubscribe failed:', err);
     }
@@ -89,6 +105,7 @@ export const usePushNotifications = () => {
   return {
     permission,
     subscription,
+    checked,
     requestPermission,
     unsubscribe,
     isSupported: 'Notification' in window && 'serviceWorker' in navigator,
@@ -109,22 +126,23 @@ function urlBase64ToUint8Array(base64String: string): BufferSource {
 
 // Component for push notification prompt
 export const PushNotificationPrompt: React.FC = () => {
-  const { permission, requestPermission, isSupported } = usePushNotifications();
-  const { authenticated } = useAuth();
-  const [dismissed, setDismissed] = useState(() => 
-    localStorage.getItem('wc_push_dismissed') === 'true'
-  );
+  const { permission, requestPermission, subscription, checked, isSupported } = usePushNotifications();
+  const { authenticated, user } = useAuth();
+  const [dismissedFor, setDismissedFor] = useState<string | null>(null);
+  const key = `wc_push_dismissed_${user?.id}`;
+  let dismissed = dismissedFor === user?.id;
+  try { dismissed ||= localStorage.getItem(key) === 'true'; } catch { /* optional storage */ }
 
-  if (!authenticated || !isSupported || permission === 'granted' || permission === 'denied' || dismissed) {
+  if (!authenticated || !isSupported || !checked || subscription || permission === 'denied' || dismissed) {
     return null;
   }
 
   const handleDismiss = () => {
-    setDismissed(true);
-    localStorage.setItem('wc_push_dismissed', 'true');
+    setDismissedFor(user?.id || null);
+    try { localStorage.setItem(key, 'true'); } catch { /* optional storage */ }
   };
 
-  const handleEnable = async () => {
+  const handleAtivar = async () => {
     const success = await requestPermission();
     if (success) handleDismiss();
   };
@@ -144,35 +162,35 @@ export const PushNotificationPrompt: React.FC = () => {
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--md-on-surface)', marginBottom: 4 }}>
-            Get payment updates
+            Acompanhe seus pagamentos
           </p>
           <p style={{ fontSize: 12, color: 'var(--md-on-surface-variant)', lineHeight: 1.4 }}>
-            We'll notify you when someone pays you or confirms receipt.
+            Receba um aviso quando alguém marcar um pagamento ou confirmar o recebimento.
           </p>
         </div>
-        <button onClick={handleDismiss} style={{
-          background: 'none', border: 'none', padding: 4,
+        <button onClick={handleDismiss} aria-label="Fechar aviso" style={{
+          background: 'none', border: 'none', padding: 4, minWidth: 44, minHeight: 44,
           cursor: 'pointer', color: 'var(--md-on-surface-variant)',
         }}>
           <span className="material-symbols-rounded" style={{ fontSize: 20 }}>close</span>
         </button>
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        <button onClick={handleEnable} style={{
+        <button onClick={handleAtivar} style={{
           flex: 1, padding: '10px 16px', borderRadius: 'var(--shape-full)',
           background: 'var(--md-primary)', color: 'var(--md-on-primary)',
           border: 'none', fontSize: 14, fontWeight: 600,
           cursor: 'pointer', fontFamily: 'inherit',
         }}>
-          Enable
+          Ativar
         </button>
-        <button onClick={handleDismiss} style={{
+        <button onClick={handleDismiss} aria-label="Fechar aviso" style={{
           padding: '10px 16px', borderRadius: 'var(--shape-full)',
           background: 'none', color: 'var(--md-on-surface-variant)',
           border: 'none', fontSize: 14, fontWeight: 500,
           cursor: 'pointer', fontFamily: 'inherit',
         }}>
-          Maybe later
+          Mais tarde
         </button>
       </div>
     </div>

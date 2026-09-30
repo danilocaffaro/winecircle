@@ -1,0 +1,11 @@
+# Configuracao de worktree do Orca.
+# Compartilhado = symlink/clone a partir do checkout primario (nao copia).
+# Regra: compartilhe o que e grande e reconstruivel; copie o que e per-worktree.
+worktree:
+  sharedDirectories:
+    # 133M, 25 pacotes (vite/react/typescript/eslint). Reconstruir custa ~1min
+    # por worktree e 133M de disco cada. O setup hook da raiz instala so as 4
+    # deps de nivel superior, entao sem isto o worktree novo nao builda.
+    # Se uma branch mudar app/package.json, aquele worktree precisa do proprio
+    # `npm ci` dentro de app/.
+    - app/node_modules

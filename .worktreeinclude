@@ -1,0 +1,9 @@
+# Arquivos gitignored copiados para cada worktree novo.
+# Cada worktree fica dono da sua copia (nao e symlink).
+# So caminhos literais; glob e negacao sao ignorados com aviso.
+
+# Binario do PocketBase (~32MB, vem do zip). Sem isto, todo worktree
+# novo precisa rebaixar o zip antes de rodar a suite de teste.
+# pb_data/ NAO entra aqui de proposito: cada worktree cria a sua
+# instancia limpa, senao runs concorrentes colidem.
+test/pb/pocketbase

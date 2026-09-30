@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   getEvent, getEventRatings, getMembers, describeError,
 } from '../services/pocketbase';
@@ -8,6 +8,7 @@ import type { TastingEvent, Member, Rating } from '../types';
 
 export const ResultsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [event, setEvent] = useState<TastingEvent | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [ratings, setRatings] = useState<Rating[]>([]);
@@ -23,6 +24,7 @@ export const ResultsPage: React.FC = () => {
       try {
         const evt = await getEvent(id);
         if (cancelled) return;
+        if (evt.status !== 'completed') { navigate(`/events/${id}`, { replace: true }); return; }
         setEvent(evt);
         const [mem, rats] = await Promise.all([
           getMembers(evt.participants || []),
@@ -38,7 +40,7 @@ export const ResultsPage: React.FC = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, navigate]);
 
   const wines = useMemo(() => event?.wines || [], [event]);
   const results = useMemo(() => calculateBorda(wines, ratings), [wines, ratings]);
@@ -116,14 +118,14 @@ export const ResultsPage: React.FC = () => {
             how_to_vote
           </span>
           <h2 className="type-title-large mt-3 mb-2" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
-            Ainda não há votos
+            Degustação encerrada sem votos
           </h2>
           <p className="type-body-medium mb-6" style={{ color: 'var(--md-on-surface-variant)' }}>
             Ninguém enviou um ranking neste evento, então não há resultado para revelar.
           </p>
-          <Link to={`/events/${event.id}/tasting`} className="btn-primary">
+          <Link to={`/events/${event.id}`} className="btn-primary">
             <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>wine_bar</span>
-            Ir para a degustação
+            Voltar ao evento
           </Link>
         </div>
       </div>
@@ -131,6 +133,7 @@ export const ResultsPage: React.FC = () => {
   }
 
   const winner = results[0];
+  const winners = results.filter((result) => result.rank === 1);
   const partial = tasters.size < members.length;
 
   const getMedal = (rank: number) => {
@@ -178,15 +181,15 @@ export const ResultsPage: React.FC = () => {
           </p>
           <span className="btn-primary px-10">
             <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>celebration</span>
-            Revelar vencedor
+            Revelar resultado
           </span>
         </div>
       )}
 
       {revealed && winner && (
-        <div className="relative overflow-hidden text-white transition-all duration-700" data-testid="winner-card"
+        <div className="relative overflow-hidden transition-all duration-700" data-testid="winner-card"
           style={{
-            background: 'linear-gradient(135deg, var(--md-primary) 0%, var(--md-secondary) 40%, var(--md-primary-container) 70%, var(--md-primary) 100%)',
+            background: 'var(--md-primary)', color: 'var(--md-on-primary)',
             borderRadius: 'var(--shape-extra-large)',
           }}>
           <div className="absolute inset-0 opacity-[0.05]" style={{
@@ -200,23 +203,23 @@ export const ResultsPage: React.FC = () => {
               </span>
               <p style={{
                 fontSize: 11, fontWeight: 700, letterSpacing: '0.2em',
-                textTransform: 'uppercase', color: '#D4AB5C',
-              }}>Vencedor</p>
+                textTransform: 'uppercase', color: 'var(--md-on-primary)',
+              }}>{winners.length > 1 ? 'Empate em 1º lugar' : 'Vencedor'}</p>
             </div>
             <h2 className="type-headline-medium font-bold mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>
-              {nameOf(winner.wineIndex)}
+              {winners.map((result) => nameOf(result.wineIndex)).join(' · ')}
             </h2>
-            {winner.wine.producer && (
-              <p className="type-body-medium" style={{ opacity: 0.7 }}>{winner.wine.producer}</p>
+            {winners.length === 1 && winner.wine.producer && winner.wine.producer !== winner.wine.name && (
+              <p className="type-body-medium" style={{ opacity: 0.9 }}>{winner.wine.producer}</p>
             )}
             <div className="flex items-center justify-center gap-3 my-4">
               <span className="type-display-small font-black" style={{
-                fontFamily: 'Playfair Display, serif', color: '#D4AB5C',
+                fontFamily: 'Playfair Display, serif', color: 'var(--md-on-primary)',
               }}>{winner.totalPoints}</span>
-              <span className="type-body-small" style={{ opacity: 0.5 }}>/ {max} pts</span>
+              <span className="type-body-small">/ {max} pts</span>
             </div>
             {winner.firstPlaces > 0 && (
-              <p className="type-body-small" style={{ opacity: 0.75 }}>
+              <p className="type-body-small">
                 {winner.firstPlaces} {winner.firstPlaces === 1 ? 'voto' : 'votos'} em 1º lugar
               </p>
             )}

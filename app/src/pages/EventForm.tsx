@@ -34,6 +34,7 @@ export const EventForm: React.FC = () => {
 
         if (id) {
           const evt = await getEvent(id);
+          if (evt.status !== 'upcoming') { navigate(`/events/${id}`, { replace: true }); return; }
           setExistingEvent(evt);
           effectiveClubId = evt.club;
           setName(evt.title || '');
@@ -59,7 +60,7 @@ export const EventForm: React.FC = () => {
         setLoading(false);
       }
     })();
-  }, [clubId, id]);
+  }, [clubId, id, navigate]);
 
   const removeWine = (wineId: string) => setWines(wines.filter(w => w.id !== wineId));
 

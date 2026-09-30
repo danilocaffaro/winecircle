@@ -76,7 +76,11 @@ export async function signUp(email: string, password: string, displayName: strin
 export const signIn = (email: string, password: string) =>
   pb.collection('users').authWithPassword(email, password);
 
-export const signOut = () => pb.authStore.clear();
+export async function signOut() {
+  const cleanup = removePushSubscription();
+  pb.authStore.clear();
+  await cleanup;
+}
 
 export const getCurrentUser = () => pb.authStore.record as CurrentUser | null;
 
@@ -151,9 +155,8 @@ export const deleteClub = (id: string) => pb.collection('wc_clubs').delete(id);
  * escrever `members` podia também renomear ou excluir o clube. A rota
  * adiciona só quem chamou, e o clube fica travado no dono.
  */
-export async function joinClub(clubId: string, token: string): Promise<Club> {
-  await pb.send('/api/wc/join', { method: 'POST', body: { club: clubId, token } });
-  return getClub(clubId);
+export async function joinClub(clubId: string, token: string): Promise<{ already: boolean }> {
+  return pb.send('/api/wc/join', { method: 'POST', body: { club: clubId, token } });
 }
 
 /** O que a tela de convite mostra antes de a pessoa entrar. */
@@ -222,6 +225,9 @@ export const getEventRatings = (eventId: string) =>
     filter: `event = "${eventId}"`, sort: 'user,rank',
   });
 
+export const getEventProgress = (eventId: string) =>
+  pb.send<{ submitted: string[]; status: EventStatus }>(`/api/wc/event-progress?event=${encodeURIComponent(eventId)}`, { method: 'GET' });
+
 /** Só as suas notas, para reidratar a tela se você voltar depois. */
 export function getMyRatings(eventId: string) {
   const user = getCurrentUser();
@@ -246,26 +252,9 @@ export async function submitMyRanking(
   const user = getCurrentUser();
   if (!user) throw new Error('Não autenticado');
 
-  const existing = await getMyRatings(eventId);
-  const byWine = new Map(existing.map((r) => [r.wine_index, r]));
-
-  await Promise.all(orderedWineIndexes.map((wineIndex, position) => {
-    const note = notes[wineIndex];
-    const payload = {
-      event: eventId,
-      user: user.id,
-      wine_index: wineIndex,
-      rank: position + 1,
-      stars: note?.stars ?? 0,
-      note_aroma: note?.aroma ?? '',
-      note_palate: note?.palate ?? '',
-      note_finish: note?.finish ?? '',
-    };
-    const found = byWine.get(wineIndex);
-    return found
-      ? pb.collection('wc_ratings').update(found.id, payload)
-      : pb.collection('wc_ratings').create(payload);
-  }));
+  await pb.send('/api/wc/ranking', {
+    method: 'POST', body: { event: eventId, order: orderedWineIndexes, notes },
+  });
 }
 
 // ── Despesas ──
@@ -337,12 +326,12 @@ export function getMyPayments(status?: string) {
 
 export const markAsPaid = (id: string) =>
   pb.collection('wc_payments').update<Payment>(id, {
-    status: 'paid', paid_at: new Date().toISOString(),
+    status: 'paid',
   });
 
 export const confirmPayment = (id: string) =>
   pb.collection('wc_payments').update<Payment>(id, {
-    status: 'confirmed', confirmed_at: new Date().toISOString(),
+    status: 'confirmed',
   });
 
 export const disputePayment = (id: string) =>
@@ -431,4 +420,25 @@ export async function savePushSubscription(subscription: PushSubscription) {
   } catch {
     return pb.collection('wc_push_subs').create(payload);
   }
+}
+
+/** Cancel this device before clearing auth, so the previous account stops receiving push. */
+export async function removePushSubscription() {
+  const user = getCurrentUser();
+  const token = pb.authStore.token;
+  if (!('serviceWorker' in navigator)) return;
+  const registration = await navigator.serviceWorker.getRegistration();
+  const subscription = await registration?.pushManager?.getSubscription();
+  if (!subscription) return;
+  const endpoint = subscription.endpoint;
+  if (!await subscription.unsubscribe()) throw new Error('Não foi possível desativar as notificações neste aparelho');
+  if (!user) return;
+  const rows = await pb.collection('wc_push_subs').getFullList({
+    filter: pb.filter('user = {:user} && endpoint = {:endpoint}', { user: user.id, endpoint }),
+    signal: AbortSignal.timeout(4000),
+    headers: { Authorization: token }, keepalive: true,
+  });
+  await Promise.all(rows.map((row) => pb.collection('wc_push_subs').delete(row.id, {
+    signal: AbortSignal.timeout(4000), headers: { Authorization: token }, keepalive: true,
+  })));
 }

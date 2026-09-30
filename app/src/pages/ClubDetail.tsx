@@ -1,3 +1,4 @@
+import { LoadError } from '../components/LoadError';
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { formatEventDate } from '../utils/algorithms';
@@ -15,6 +16,8 @@ export const ClubDetail: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);
   const [events, setEvents] = useState<TastingEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [retry, setRetry] = useState(0);
 
   const currentUser = getCurrentUser();
   const isMember = club && currentUser && (club.members || []).includes(currentUser.id);
@@ -35,12 +38,12 @@ export const ClubDetail: React.FC = () => {
         const evts = await getEvents(id);
         setEvents(evts);
       } catch (err) {
-        console.error(err);
+        setLoadError(describeError(err));
       } finally {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, retry]);
 
   const handleDelete = async () => {
     if (!club || !confirm('Excluir este clube? Isso não pode ser desfeito.')) return;
@@ -60,6 +63,8 @@ export const ClubDetail: React.FC = () => {
       </div>
     );
   }
+
+  if (loadError) return <LoadError message={loadError} onRetry={() => { setLoadError(''); setLoading(true); setRetry(retry + 1); }} />;
 
   if (!club) {
     return (
@@ -131,7 +136,7 @@ export const ClubDetail: React.FC = () => {
           </div>
           <div className="card-filled p-4 text-center" style={{ borderRadius: 'var(--shape-large)' }}>
             <p className="type-display-small font-bold" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-primary)' }}>{members.length}</p>
-            <p className="type-label-small mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>Members</p>
+            <p className="type-label-small mt-0.5" style={{ color: 'var(--md-on-surface-variant)' }}>Membros</p>
           </div>
         </div>
       )}
@@ -205,7 +210,7 @@ export const ClubDetail: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-2">
-            {events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event) => {
+            {[...events].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event) => {
               const status = event.status || 'upcoming';
               const icon = status === 'completed' ? 'emoji_events' : status === 'tasting' ? 'wine_bar' : 'event_note';
               const iconColor = status === 'completed' ? 'var(--md-tertiary)' : status === 'tasting' ? 'var(--md-secondary)' : 'var(--md-on-surface-variant)';

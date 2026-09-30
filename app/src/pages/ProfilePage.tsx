@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 import {
   updateProfile, getMyPayments, getMyClubs, getEvents, getMyRatings,
   describeError,
@@ -21,6 +22,7 @@ import type { Club, TastingEvent, Payment, Wine } from '../types';
  */
 export const ProfilePage: React.FC = () => {
   const { authenticated, user, logout, refreshUser } = useAuth();
+  const push = usePushNotifications();
 
   const [clubs, setClubs] = useState<Club[]>([]);
   const [events, setEvents] = useState<TastingEvent[]>([]);
@@ -482,6 +484,15 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
 
+      {push.isSupported && <section className="card-outlined p-4 space-y-2" aria-label="Notificações">
+        <p className="type-title-small">Notificações neste aparelho</p>
+        <p className="type-body-small">{push.subscription ? 'Você recebe os avisos desta conta.' : 'Ative os avisos de pagamento. Ao sair da conta, eles são cancelados.'}</p>
+        <button className="btn-outlined" data-testid="push-toggle" disabled={!push.checked}
+          onClick={push.subscription ? push.unsubscribe : push.requestPermission}>
+          {push.subscription ? 'Desativar notificações' : 'Ativar notificações'}
+        </button>
+      </section>}
+
       <button onClick={logout} data-testid="logout" style={{
         width: '100%', padding: '14px 0', borderRadius: 'var(--shape-full)',
         background: 'none', border: '1px solid var(--md-error)',
@@ -490,7 +501,7 @@ export const ProfilePage: React.FC = () => {
       }}>Sair da conta</button>
 
       <div style={{ textAlign: 'center', paddingTop: 32 }}>
-        <p style={{ fontSize: 11, color: 'var(--md-on-surface-variant)' }}>Wine Circle v2.0</p>
+        <p style={{ fontSize: 11, color: 'var(--md-on-surface-variant)' }}>Wine Circle</p>
       </div>
     </div>
   );

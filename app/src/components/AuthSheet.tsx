@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { clearDestination, rememberDestination } from '../utils/authDestination';
 import { useAuth } from '../contexts/AuthContext';
 import { describeError } from '../services/pocketbase';
 
@@ -39,6 +40,8 @@ export const AuthSheet: React.FC<Props> = ({ modo, onTrocarModo, onFechar, desti
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
 
   const painel = useRef<HTMLDivElement>(null);
   const primeiroCampo = useRef<HTMLInputElement>(null);
@@ -89,6 +92,8 @@ export const AuthSheet: React.FC<Props> = ({ modo, onTrocarModo, onFechar, desti
       return;
     }
     setLoading(true);
+    setError('');
+    rememberDestination(destino);
     try {
       if (modo === 'login') {
         await login(email, password);
@@ -100,8 +105,9 @@ export const AuthSheet: React.FC<Props> = ({ modo, onTrocarModo, onFechar, desti
       // navigate, não window.location: recarregar a página inteira descarta o
       // estado do router e cria uma corrida com quem já está navegando.
       navigate(destino, { replace: true });
+      clearDestination();
     } catch (err) {
-      toast.error(describeError(err));
+      setError(describeError(err));
       setLoading(false);
     }
   };
@@ -133,7 +139,7 @@ export const AuthSheet: React.FC<Props> = ({ modo, onTrocarModo, onFechar, desti
           <button type="button" onClick={onFechar} aria-label="Fechar"
             data-testid="auth-close"
             style={{
-              background: 'none', border: 'none', cursor: 'pointer', padding: 6,
+              background: 'none', border: 'none', cursor: 'pointer', padding: 10, minWidth: 44, minHeight: 44,
               color: 'var(--md-on-surface-variant)', lineHeight: 0,
             }}>
             <span className="material-symbols-rounded" style={{ fontSize: 24 }}>close</span>
@@ -183,13 +189,16 @@ export const AuthSheet: React.FC<Props> = ({ modo, onTrocarModo, onFechar, desti
 
           <div>
             <label htmlFor="password" style={labelStyle}>Senha</label>
-            <input id="password" data-testid="password" type="password" value={password}
+            <input id="password" data-testid="password" type={showPassword ? "text" : "password"} value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Ao menos 8 caracteres" required minLength={8}
               autoComplete={modo === 'login' ? 'current-password' : 'new-password'}
               style={inputStyle} />
           </div>
 
+          <button type="button" className="btn-text" aria-pressed={showPassword}
+            onClick={() => setShowPassword(!showPassword)}>{showPassword ? 'Ocultar senha' : 'Mostrar senha'}</button>
+          {error && <p role="alert" style={{ color: 'var(--md-error)' }}>{error}</p>}
           <button type="submit" disabled={loading} data-testid="submit"
             style={{
               width: '100%', height: 52, borderRadius: 'var(--shape-full)',

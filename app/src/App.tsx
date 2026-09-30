@@ -1,4 +1,5 @@
 import React from 'react';
+import { authDestination, rememberDestination } from './utils/authDestination';
 import { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -26,7 +27,7 @@ import { PushNotificationPrompt } from './hooks/usePushNotifications';
  * a borda é obrigada a buscar o arquivo novo. **Suba o número ao mexer em
  * sw.js.**
  */
-const SW_VERSION = '3';
+const SW_VERSION = '4';
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -61,9 +62,16 @@ const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { authenticated } = useAuth();
   const location = useLocation();
   if (!authenticated) {
+    rememberDestination(location.pathname + location.search);
     return <Navigate to="/entrar" replace state={{ from: location.pathname + location.search }} />;
   }
   return <>{children}</>;
+};
+
+const Entrar: React.FC = () => {
+  const { authenticated } = useAuth();
+  const location = useLocation();
+  return authenticated ? <Navigate to={authDestination(location.state)} replace /> : <AuthPage />;
 };
 
 const AppRoutes: React.FC = () => {
@@ -75,15 +83,16 @@ const AppRoutes: React.FC = () => {
     <>
       <Routes>
         <Route path="/entrar" element={
-          authenticated ? <Navigate to="/" replace /> : <AuthPage />
+          <Entrar />
         } />
+
+        <Route path="/join/:id" element={<JoinClubPage />} />
 
         <Route path="/*" element={
           <Layout>
             <Routes>
               {/* Abertas: a apresentação e o convite precisam funcionar deslogado */}
               <Route path="/" element={<Home />} />
-              <Route path="/join/:id" element={<JoinClubPage />} />
 
               <Route path="/clubs" element={<RequireAuth><ClubList /></RequireAuth>} />
               <Route path="/clubs/new" element={<RequireAuth><ClubForm /></RequireAuth>} />

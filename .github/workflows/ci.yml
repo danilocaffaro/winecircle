@@ -33,28 +33,8 @@ jobs:
         working-directory: app
         run: npm ci
 
-      # Lint deixou de ser continue-on-error: os 60 erros que ele ignorava
-      # eram exatamente o tipo de coisa que deixava bug passar despercebido.
-      - name: Lint
-        working-directory: app
-        run: npm run lint
-
-      - name: Type check + build
-        working-directory: app
-        run: npm run build
-
-      - name: Conferir saída do build
-        working-directory: app
-        run: |
-          test -f dist/index.html || { echo "❌ build sem index.html"; exit 1; }
-          # O service worker já foi entregue como TypeScript uma vez e falhou
-          # em toda visita; agora o parse é verificado no CI.
-          node --check dist/sw.js || { echo "❌ sw.js não é JavaScript válido"; exit 1; }
-          # E a chave do Gemini não pode voltar para o bundle.
-          if grep -rqE "AIzaSy[A-Za-z0-9_-]{20,}" dist/; then
-            echo "❌ chave de API encontrada no bundle"; exit 1
-          fi
-          echo "✅ build OK ($(find dist -type f | wc -l) arquivos)"
+      - name: Verificar app (mesmo portão local)
+        run: npm run verify
 
       - uses: actions/upload-artifact@v4
         with:
