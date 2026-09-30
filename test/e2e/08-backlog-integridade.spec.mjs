@@ -290,12 +290,16 @@ test.describe('Backlog — convite e integridade com PocketBase real', () => {
     await page.goto(`/events/${f.event.id}/tasting`);
     await expect(page.getByText('0/2', { exact: true })).toBeVisible();
     let pending;
-    await page.route(`${PB_URL}/api/wc/event-progress?**`, (route) => { pending = route; });
+    await page.route(`${PB_URL}/api/wc/event-progress?**`, (route) => {
+      if (!pending) pending = route;
+      else return route.abort();
+    });
     await expect.poll(() => !!pending, { timeout: 5000 }).toBe(true);
     await page.locator('a[href="/clubs"]').filter({ visible: true }).first().click();
     await expect(page).toHaveURL(/\/clubs$/);
     await pending.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ submitted: [], status: 'completed' }) });
     // Exercise another SPA navigation after the delayed response was handled.
+    await expect(page.getByRole('heading', { name: 'Meus clubes' })).toBeVisible();
     await page.getByText(f.club.name, { exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/clubs/${f.club.id}$`));
   });

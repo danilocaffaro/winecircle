@@ -58,6 +58,8 @@ Também incluídos:
 
 Execução no Mac16 em 29/09/2026: `verify` aprovado e **166/166 testes E2E aprovados**, sem retries (83 cenários em cada viewport). A instância isolada usou dados sintéticos e todas as migrations, incluindo a nova.
 
+A regressão de resposta atrasada foi repetida cinco vezes em cada viewport após proteger também o intervalo entre a mudança da URL e o cleanup do React: **10/10 aprovadas sem retries**.
+
 Push no sistema operacional e comportamento físico do iPhone/Android continuam pendentes: o teste de logout simula somente a inscrição do navegador e usa a API local real para sua remoção. A execução automatizada em viewport não substitui aparelho físico.
 
 O checkpoint do Orca não pôde ser atualizado porque o runtime do app não estava disponível no Mac16. A branch/worktree e este documento preservam o estado para revisão. O deploy permanece manual e depende de secrets e de aprovação para a migration nova; ver [DEPLOY-NOTES.md](DEPLOY-NOTES.md).

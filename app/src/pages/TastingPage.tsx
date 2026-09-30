@@ -93,7 +93,9 @@ export const TastingPage: React.FC = () => {
   const refreshRatings = useCallback(async (eventId: string) => {
     try {
       const progress = await getEventProgress(eventId);
-      if (activeEvent.current !== eventId) return;
+      // History changes before React necessarily runs the unmount cleanup.
+      // A response arriving in that gap must not undo the chosen navigation.
+      if (activeEvent.current !== eventId || window.location.pathname !== `/events/${eventId}/tasting`) return;
       setSubmittedUsers(progress.submitted);
       if (progress.status === 'completed') navigate(`/events/${eventId}/results`, { replace: true });
     } catch { /* progresso é secundário; não derruba a tela */ }
