@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -9,12 +9,12 @@ import {
 } from '@dnd-kit/sortable';
 import toast from 'react-hot-toast';
 import {
-  pb, getEvent, getEventRatings, getMyRatings, submitMyRanking,
+  pb, getEvent, getEventProgress, getMyRatings, submitMyRanking,
   getMembers, setEventStatus, getCurrentUser, describeError,
 } from '../services/pocketbase';
-import { tastersWhoSubmitted, blindLabel } from '../utils/algorithms';
+import { blindLabel } from '../utils/algorithms';
 import { SortableWineCard } from '../components/SortableWineCard';
-import type { TastingEvent, Member, Wine, WineNote, Rating } from '../types';
+import type { TastingEvent, Member, Wine, WineNote } from '../types';
 
 const STAR_LABELS = ['', 'Fraco', 'Razoável', 'Bom', 'Ótimo', 'Excepcional'];
 
@@ -23,7 +23,7 @@ function StarRating({ value, onChange, label }: {
 }) {
   const [hovered, setHovered] = useState(0);
   return (
-    <div className="flex gap-1 items-center" role="radiogroup" aria-label={label}>
+    <div className="flex flex-wrap gap-1 items-center" role="radiogroup" aria-label={label}>
       {[1, 2, 3, 4, 5].map((s) => (
         <button
           key={s}
@@ -35,7 +35,7 @@ function StarRating({ value, onChange, label }: {
           onMouseLeave={() => setHovered(0)}
           onClick={() => onChange(s === value ? 0 : s)}
           className="transition-transform active:scale-90"
-          style={{ border: 'none', background: 'none', padding: 2, cursor: 'pointer' }}
+          style={{ border: 'none', background: 'none', padding: 2, minWidth: 44, minHeight: 44, cursor: 'pointer' }}
         >
           <span
             className={`material-symbols-rounded ${s <= (hovered || value) ? 'ms-filled' : ''}`}
@@ -47,7 +47,7 @@ function StarRating({ value, onChange, label }: {
         </button>
       ))}
       {(hovered || value) > 0 && (
-        <span className="type-label-small ml-1" style={{ color: 'var(--md-on-surface-variant)' }}>
+        <span className="type-label-small w-full" style={{ color: 'var(--md-on-surface-variant)' }}>
           {STAR_LABELS[hovered || value]}
         </span>
       )}
@@ -71,7 +71,9 @@ export const TastingPage: React.FC = () => {
 
   const [event, setEvent] = useState<TastingEvent | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
-  const [ratings, setRatings] = useState<Rating[]>([]);
+  const [submittedUsers, setSubmittedUsers] = useState<string[]>([]);
+  const restored = useRef(false);
+  const activeEvent = useRef<string | undefined>(id);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -90,34 +92,50 @@ export const TastingPage: React.FC = () => {
 
   const refreshRatings = useCallback(async (eventId: string) => {
     try {
-      setRatings(await getEventRatings(eventId));
+      const progress = await getEventProgress(eventId);
+      // History changes before React necessarily runs the unmount cleanup.
+      // A response arriving in that gap must not undo the chosen navigation.
+      if (activeEvent.current !== eventId || window.location.pathname !== `/events/${eventId}/tasting`) return;
+      setSubmittedUsers(progress.submitted);
+      if (progress.status === 'completed') navigate(`/events/${eventId}/results`, { replace: true });
     } catch { /* progresso é secundário; não derruba a tela */ }
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
+    activeEvent.current = id;
+    restored.current = false;
+    setLoading(true);
+    setLoadError('');
+    setSubmitted(false);
 
     (async () => {
       try {
         const evt = await getEvent(id);
         if (cancelled) return;
+        if (evt.status !== 'tasting') {
+          navigate(`/events/${id}${evt.status === 'completed' ? '/results' : ''}`, { replace: true });
+          return;
+        }
         setEvent(evt);
 
         const [mem, all, mine] = await Promise.all([
           getMembers(evt.participants || []),
-          getEventRatings(id),
+          getEventProgress(id),
           getMyRatings(id),
         ]);
         if (cancelled) return;
 
         setMembers(mem);
-        setRatings(all);
+        setSubmittedUsers(all.submitted);
 
         const wines: Wine[] = evt.wines || [];
         if (mine.length > 0) {
           // Já enviou antes: reidrata a ordem e as notas para poder revisar.
-          setOrder([...mine].sort((a, b) => a.rank - b.rank).map((r) => r.wine_index));
+          const savedOrder = [...mine].sort((a, b) => a.rank - b.rank).map((r) => r.wine_index)
+            .filter((index) => Number.isInteger(index) && index >= 0 && index < wines.length);
+          setOrder([...new Set(savedOrder), ...wines.map((_, i) => i).filter((i) => !savedOrder.includes(i))]);
           const restored: Record<number, WineNote> = {};
           for (const r of mine) {
             restored[r.wine_index] = {
@@ -128,10 +146,19 @@ export const TastingPage: React.FC = () => {
             };
           }
           setNotes(restored);
-          setSubmitted(true);
+          setSubmitted(all.submitted.includes(me?.id || ''));
         } else {
           setOrder(wines.map((_, i) => i));
+          setNotes({});
         }
+        let draft: { order: number[]; notes: Record<number, WineNote>; wineIds: string[] } | null = null;
+        try { draft = JSON.parse(localStorage.getItem(`wc_draft_${me?.id}_${id}`) || 'null'); } catch { /* invalid draft */ }
+        if (draft && Array.isArray(draft.order) && JSON.stringify(draft.wineIds) === JSON.stringify(wines.map((w) => w.id)) &&
+            draft.order.length === wines.length && new Set(draft.order).size === wines.length &&
+            draft.order.every((i) => Number.isInteger(i) && i >= 0 && i < wines.length)) {
+          setOrder(draft.order); setNotes(draft.notes || {});
+        }
+        restored.current = true;
       } catch (err) {
         if (!cancelled) setLoadError(describeError(err));
       } finally {
@@ -139,26 +166,43 @@ export const TastingPage: React.FC = () => {
       }
     })();
 
-    return () => { cancelled = true; };
-  }, [id]);
+    return () => { cancelled = true; activeEvent.current = undefined; };
+  }, [id, me?.id, navigate]);
 
-  // Progresso do grupo ao vivo: você vê os outros enviarem sem recarregar.
+  // Progress exposes submitters only. Votes stay private until the reveal.
   useEffect(() => {
     if (!id || !me) return;
-    let unsub: (() => void) | undefined;
-    pb.collection('wc_ratings')
-      .subscribe('*', () => { refreshRatings(id); })
-      .then((fn) => { unsub = fn; })
-      .catch(() => { /* realtime é um extra, não um requisito */ });
-    return () => { unsub?.(); };
+    let disposed = false;
+    let unsubscribe: (() => void) | undefined;
+    const update = () => { if (!document.hidden) void refreshRatings(id); };
+    const timer = window.setInterval(update, 2000);
+    document.addEventListener('visibilitychange', update);
+    window.addEventListener('online', update);
+    pb.collection('wc_events').subscribe(id, update).then((fn) => {
+      if (disposed) fn(); else unsubscribe = fn;
+    }).catch(() => { /* polling remains available */ });
+    return () => {
+      disposed = true; unsubscribe?.(); window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', update);
+      window.removeEventListener('online', update);
+    };
   }, [id, me, refreshRatings]);
+
+  useEffect(() => {
+    if (!restored.current || !event || event.id !== id || !me) return;
+    try {
+      localStorage.setItem(`wc_draft_${me.id}_${id}`, JSON.stringify({
+        order, notes, wineIds: event.wines.map((wine) => wine.id),
+      }));
+    } catch { /* storage quota or private browsing */ }
+  }, [order, notes, event, id, me]);
 
   const wines: Wine[] = useMemo(() => event?.wines || [], [event]);
   const isBlind = event?.type === 'blind';
   const isParticipant = !!me && !!event && (event.participants || []).includes(me.id);
   const isOrganizer = !!me && event?.created_by === me.id;
 
-  const submittedIds = useMemo(() => tastersWhoSubmitted(ratings), [ratings]);
+  const submittedIds = useMemo(() => new Set(submittedUsers), [submittedUsers]);
   const everyoneDone = members.length > 0 && members.every((m) => submittedIds.has(m.id));
 
   const handleDragEnd = useCallback((e: DragEndEvent) => {
@@ -193,6 +237,7 @@ export const TastingPage: React.FC = () => {
     try {
       await submitMyRanking(id, order, notes);
       setSubmitted(true);
+      try { localStorage.removeItem(`wc_draft_${me?.id}_${id}`); } catch { /* optional storage */ }
       await refreshRatings(id);
       toast.success(submitted ? 'Ranking atualizado!' : 'Ranking enviado!');
     } catch (err) {
@@ -204,6 +249,7 @@ export const TastingPage: React.FC = () => {
 
   const handleReveal = async () => {
     if (!id) return;
+    if (!everyoneDone && !window.confirm(`Encerrar a votação? Ainda faltam ${members.filter((m) => !submittedIds.has(m.id)).map((m) => m.name).join(', ')}. O resultado usará apenas os rankings enviados.`)) return;
     setSaving(true);
     try {
       await setEventStatus(id, 'completed');
@@ -251,7 +297,7 @@ export const TastingPage: React.FC = () => {
   }
 
   // Quem não foi incluído no evento não degusta — e agora sabe disso (A-18).
-  if (!isParticipant) {
+  if (!isParticipant && !isOrganizer) {
     return (
       <div className="text-center py-16 space-y-3 max-w-md mx-auto">
         <span className="material-symbols-rounded" style={{ fontSize: 44, color: 'var(--md-outline)' }}>
@@ -262,7 +308,7 @@ export const TastingPage: React.FC = () => {
         </h1>
         <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
           Só quem foi incluído como participante de <strong>{event.title}</strong> pode
-          enviar um ranking. Peça a quem organizou para te adicionar.
+          enviar um ranking. A lista de participantes fica fixa durante a votação.
         </p>
         <Link to={`/events/${event.id}`} className="btn-outlined inline-flex items-center gap-1">
           <span className="material-symbols-rounded" style={{ fontSize: 18 }}>arrow_back</span>
@@ -285,7 +331,7 @@ export const TastingPage: React.FC = () => {
             wine_bar
           </span>
           <h1 className="type-headline-small" style={{ fontFamily: 'Playfair Display, serif', color: 'var(--md-on-surface)' }}>
-            Sua degustação
+            {isParticipant ? 'Sua degustação' : 'Acompanhar degustação'}
           </h1>
         </div>
         <p className="type-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
@@ -326,6 +372,7 @@ export const TastingPage: React.FC = () => {
         </div>
       </div>
 
+      {isParticipant ? <>
       {/* Aviso honesto de que dá para revisar */}
       {submitted && !everyoneDone && (
         <div className="p-4 mb-5" style={{
@@ -334,8 +381,8 @@ export const TastingPage: React.FC = () => {
         }}>
           <span className="material-symbols-rounded ms-filled" style={{ fontSize: 20 }}>check_circle</span>
           <p className="type-body-small" style={{ margin: 0 }}>
-            Seu ranking foi enviado. Dá para ajustar e reenviar enquanto o grupo
-            não termina — o resultado só aparece quando todos enviarem.
+            Seu ranking foi enviado. Dá para ajustar e reenviar enquanto a votação
+            estiver aberta. O resultado aparece quando quem organiza encerrar.
           </p>
         </div>
       )}
@@ -455,18 +502,19 @@ export const TastingPage: React.FC = () => {
           })}
         </div>
       )}
+      </> : <p className="type-body-medium mb-4">Você organiza este evento e pode encerrar a votação, mas não está na lista de participantes para votar.</p>}
 
       {/* Enviar */}
-      <div className="sticky bottom-0 pt-3 pb-1 mt-4" style={{ background: 'var(--md-background)' }}>
-        <button onClick={handleSubmit} disabled={saving || order.length === 0}
+      <div className="ranking-actions pt-3 pb-1 mt-4">
+        {isParticipant && <button onClick={handleSubmit} disabled={saving || order.length === 0}
           data-testid="submit-ranking"
           className="btn-primary w-full"
           style={{ height: 48, borderRadius: 'var(--shape-large)', opacity: saving ? 0.7 : 1 }}>
           <span className="material-symbols-rounded" aria-hidden="true" style={{ fontSize: 20 }}>check</span>
           {saving ? 'Enviando...' : submitted ? 'Atualizar meu ranking' : 'Enviar meu ranking'}
-        </button>
+        </button>}
 
-        {everyoneDone && (
+        {(everyoneDone || isOrganizer) && (
           <div className="mt-3">
             {isOrganizer ? (
               <button onClick={handleReveal} disabled={saving} data-testid="reveal-results"
@@ -474,7 +522,7 @@ export const TastingPage: React.FC = () => {
                 <span className="material-symbols-rounded ms-filled" aria-hidden="true" style={{ fontSize: 20 }}>
                   emoji_events
                 </span>
-                Todos enviaram — revelar resultado
+                {everyoneDone ? 'Todos enviaram — revelar resultado' : 'Encerrar votação e revelar'}
               </button>
             ) : (
               <p className="type-body-small text-center" style={{ color: 'var(--md-on-surface-variant)' }}>

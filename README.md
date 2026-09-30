@@ -46,10 +46,11 @@ npm run pb:seed
 ## Testes
 
 ```bash
+npm run verify
 npm run test:e2e
 ```
 
-61 cenários de UI, executados em Pixel 7 e Desktop Chrome (122 execuções),
+83 cenários, executados em Pixel 7 e Desktop Chrome (166 execuções),
 cobrindo as jornadas completas com um contexto de navegador por participante.
 Os detalhes estão em [test/PLANO-DE-TESTES.md](test/PLANO-DE-TESTES.md).
 
@@ -84,6 +85,8 @@ Uma linha por (evento, usuário, vinho), com índice único, é o que torna o en
 idempotente e imune a duas pessoas salvando ao mesmo tempo.
 
 ## Operação
+
+Prioridades, entregas e trabalho restante: [BACKLOG.md](BACKLOG.md).
 
 Schema, hooks, segredos, deploy e regras de acesso: [DEPLOY-NOTES.md](DEPLOY-NOTES.md).
 

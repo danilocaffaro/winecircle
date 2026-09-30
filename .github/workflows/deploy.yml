@@ -16,13 +16,19 @@ on:
 
 concurrency:
   group: deploy-production
-  cancel-in-progress: true
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+  checks: read
 
 env:
   NODE_VERSION: '22'
 
 jobs:
   build:
+    name: deploy-build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -78,7 +84,7 @@ jobs:
           fi
           for i in 1 2 3 4 5 6; do
             STATUS=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }}/check-runs \
-              --jq '[.check_runs[] | select(.name=="ci") | .conclusion] | first // "pending"')
+              --jq '[.check_runs[] | select(.name=="build" or .name=="e2e")] | if length == 2 and all(.[]; .conclusion == "success") then "success" else "pending" end')
             [ "$STATUS" = "success" ] && break
             echo "Attempt $i: status=$STATUS, waiting 15s..."
             sleep 15

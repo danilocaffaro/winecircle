@@ -110,7 +110,7 @@ test.describe('Cenário 4 — Resultado e divisão da conta', () => {
     await loginAs(page, carlos);
     await page.goto(`/events/${vazio.id}/results`);
 
-    await expect(page.getByText(/Ainda não há votos/i)).toBeVisible();
+    await expect(page.getByText(/Degustação encerrada sem votos/i)).toBeVisible();
     await expect(page.getByTestId('reveal-winner')).toHaveCount(0);
     await expect(page.getByTestId('winner-card')).toHaveCount(0);
   });

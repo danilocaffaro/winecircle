@@ -50,66 +50,37 @@ routerAdd("GET", "/api/wc/invite", (e) => {
 })
 
 routerAdd("POST", "/api/wc/join", (e) => {
-  const auth = e.auth
-  if (!auth) throw new UnauthorizedError("Autenticação necessária")
-
   const body = e.requestInfo().body || {}
-  const clubId = body.club
-  if (!clubId) throw new BadRequestError("Informe o clube")
-
-  let club
-  try {
-    club = e.app.findRecordById("wc_clubs", clubId)
-  } catch (err) {
-    throw new NotFoundError("Clube não encontrado")
-  }
-
-  const members = club.get("members") || []
-
-  // Já é membro: não precisa de convite para continuar sendo. Isto vem antes
-  // da checagem do token porque quem já entrou pode ter perdido o link, e
-  // recusá-lo aqui transformaria um clique inofensivo em erro.
-  if (members.indexOf(auth.id) !== -1) {
-    return e.json(200, { ok: true, already: true, members: members.length })
-  }
-
-  // Entrar exige o token do convite. Sem isto, o id do clube bastava — e ids
-  // não são segredo.
-  if (!require(`${__hooks}/lib_convite.js`).tokenConfere(club, String(body.token || ""))) {
-    throw new ForbiddenError("Este convite não é válido. Peça um link novo a quem organiza o clube.")
-  }
-
-  members.push(auth.id)
-  club.set("members", members)
-  e.app.save(club)
-
-  return e.json(200, { ok: true, already: false, members: members.length })
+  if (!body.club) throw new BadRequestError("Informe o clube")
+  let result
+  e.app.runInTransaction((tx) => {
+    let club
+    try { club = tx.findRecordById("wc_clubs", String(body.club)) }
+    catch (_) { throw new NotFoundError("Clube não encontrado") }
+    const members = club.getStringSlice("members")
+    const already = members.indexOf(e.auth.id) !== -1
+    if (!already) {
+      if (!require(`${__hooks}/lib_convite.js`).tokenConfere(club, String(body.token || ""))) throw new ForbiddenError("Convite inválido")
+      members.push(e.auth.id)
+      club.set("members", members)
+      tx.save(club)
+    }
+    result = { ok: true, already, members: members.length }
+  })
+  return e.json(200, result)
 }, $apis.requireAuth())
 
 routerAdd("POST", "/api/wc/leave", (e) => {
-  const auth = e.auth
-  if (!auth) throw new UnauthorizedError("Autenticação necessária")
-
   const body = e.requestInfo().body || {}
-  const clubId = body.club
-  if (!clubId) throw new BadRequestError("Informe o clube")
-
-  let club
-  try {
-    club = e.app.findRecordById("wc_clubs", clubId)
-  } catch (err) {
-    throw new NotFoundError("Clube não encontrado")
-  }
-
-  // O dono não pode sair e deixar o clube órfão — precisa excluir ou
-  // transferir a propriedade primeiro.
-  if (club.get("owner") === auth.id) {
-    throw new BadRequestError("O dono não pode sair do próprio clube")
-  }
-
-  const members = (club.get("members") || []).filter((id) => id !== auth.id)
-  club.set("members", members)
-  e.app.save(club)
-
-  return e.json(200, { ok: true, members: members.length })
+  if (!body.club) throw new BadRequestError("Informe o clube")
+  let count
+  e.app.runInTransaction((tx) => {
+    const club = tx.findRecordById("wc_clubs", String(body.club))
+    if (club.getString("owner") === e.auth.id) throw new BadRequestError("Transfira o clube antes de sair")
+    const members = club.getStringSlice("members").filter((id) => id !== e.auth.id)
+    club.set("members", members)
+    tx.save(club)
+    count = members.length
+  })
+  return e.json(200, { ok: true, members: count })
 }, $apis.requireAuth())

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { authDestination } from '../utils/authDestination';
 import { useLocation } from 'react-router-dom';
 import { FeatureCarousel } from '../components/FeatureCarousel';
 import { AuthSheet } from '../components/AuthSheet';
@@ -14,7 +15,7 @@ import { InstalarApp } from '../components/InstalarApp';
  */
 export const AuthPage: React.FC = () => {
   const location = useLocation();
-  const destino = (location.state as { from?: string } | null)?.from || '/';
+  const destino = authDestination(location.state);
   const [modo, setModo] = useState<'login' | 'register' | null>(null);
 
   return (

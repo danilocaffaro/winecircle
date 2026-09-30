@@ -63,9 +63,11 @@ Nada secreto entra no bundle. Tudo que começa com `VITE_` é injetado no
 JavaScript entregue ao browser — `app/.env.production` contém apenas a URL do
 backend e a chave VAPID **pública**.
 
-**Hoje não há nenhuma chave de API em uso.** O catálogo local de ~245 mil
-vinhos cobre autocomplete e preenchimento automático sem tocar em serviço
-externo — era esse o único uso da chave do Gemini que ficou pública no bundle.
+O catálogo local cobre autocomplete sem uma chave de API no frontend. Na
+consulta de 29/09/2026, produção anunciou `aiSearch: true` e 244.579 registros;
+isso indica configuração do provedor no servidor, mas não comprova uma
+resolução externa bem-sucedida. Confira a configuração antes de afirmar que
+a IA está desabilitada ou funcionando. Não exponha valores de credenciais.
 
 Se um dia quiser resolver vinhos fora do catálogo, `/home/ubuntu/pocketbase/wc.env`
 (modo 600) aceita qualquer endpoint compatível com a API da OpenAI:
@@ -102,7 +104,9 @@ E abra http://localhost:8090/_/
 ## Deploy
 
 Automático não está ligado: `deploy.yml` roda por `workflow_dispatch`. O CI
-(build + lint + type check + 122 execuções de UI) roda em todo push e PR.
+(`npm run verify` + 166 execuções) roda em pushes da main e PRs para main.
+O guard exige sucesso dos checks `build` e `e2e` para o mesmo commit; o build
+do deploy tem o nome `deploy-build`.
 
 ```bash
 gh workflow run deploy.yml
@@ -193,9 +197,9 @@ Escrita em `pb_migrations/1786794204_lock_write_rules.js`; a leitura de
 |---|---|---|
 | `wc_clubs` | dono e membros | só o dono |
 | `wc_events` | membros do clube | quem criou |
-| `wc_ratings` | membros do clube | só as próprias notas |
+| `wc_ratings` | próprias durante votação; grupo após encerramento | só endpoint atômico enquanto tasting |
 | `wc_expenses` | membros do clube | quem lançou |
-| `wc_payments` | devedor e credor | devedor e credor (status); criação por quem lançou |
+| `wc_payments` | devedor e credor | devedor marca pago; credor confirma/contesta; criação por reconciliação |
 | `wc_push_subs` | o próprio | o próprio |
 | `wc_profiles` | qualquer autenticado | view, somente leitura |
 
@@ -232,8 +236,20 @@ o `invite_token` pelo painel de administração.
 
 ## Conhecido / pendente
 
+- A branch do backlog inclui a migration nova `1790726400_tasting_integrity.js`,
+  validada apenas em instância isolada. Ela altera regras de votos e pagamentos
+  e marca `wc_events.wines` hidden para impedir filtros sobre o gabarito.
+  O enrich devolve a projeção adequada, mantendo o contrato do frontend.
+  Aplicar em produção requer aprovação e backup. Backend e frontend desta
+  entrega precisam ir juntos: clientes antigos gravam votos diretamente e
+  passam a ser recusados após a migration.
+- `tasting_integrity.pb.js` atende `POST /api/wc/ranking` e
+  `GET /api/wc/event-progress`, valida transições e protege identidades cegas;
+  `lib_tasting.js` contém leitura de progresso e atualização transacional.
+
 - Cache do Cloudflare: o token disponível é só de analytics e não purga. O
   service worker é registrado como `/sw.js?v=N` (ver `SW_VERSION` em
   `app/src/App.tsx`) justamente por isso — **suba o número ao mexer em sw.js**.
-- Push notifications não são cobertas por teste automatizado.
-- Backup do `pb_data` ainda é manual.
+- Logout push tem teste de vínculo com API local, com inscrição do navegador
+  simulada. Entrega de push em aparelho e fila segura ainda estão pendentes.
+- O workflow prepara backup antes da aplicação; resta validar restauração real.

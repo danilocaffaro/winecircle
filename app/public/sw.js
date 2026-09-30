@@ -8,7 +8,7 @@
  * cache do Cloudflare; era sintaxe.
  */
 
-const CACHE = 'winecircle-v3';
+const CACHE = 'winecircle-v4';
 
 /* O index.html NÃO entra aqui de propósito.
  *
@@ -64,7 +64,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(request).then((cached) => cached || fetch(request))
+    caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+      if (response.ok && url.pathname.startsWith('/assets/')) {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE).then((cache) => cache.put(request, copy)));
+      }
+      return response;
+    }))
   );
 });
 
@@ -78,8 +84,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      icon: '/icon-192.v2.png',
+      badge: '/icon-192.v2.png',
       vibrate: [200, 100, 200],
       data: { url: data.url || '/' },
     })

@@ -1,7 +1,8 @@
+import { LoadError } from '../components/LoadError';
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getMyClubs, getEvents, getMyPayments, getCurrentUser } from '../services/pocketbase';
+import { getMyClubs, getEvents, getMyPayments, getCurrentUser, describeError } from '../services/pocketbase';
 import { formatBRL, formatEventDate } from '../utils/algorithms';
 import { InstalarApp } from '../components/InstalarApp';
 import type { Club, TastingEvent, Payment } from '../types';
@@ -34,6 +35,8 @@ const Dashboard: React.FC = () => {
   const [events, setEvents] = useState<TastingEvent[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,11 +49,11 @@ const Dashboard: React.FC = () => {
         if (cancelled) return;
         setEvents(perClub.flat());
         setPayments(await getMyPayments());
-      } catch { /* o painel degrada para vazio; as telas internas explicam o erro */ }
+      } catch (err) { if (!cancelled) setLoadError(describeError(err)); }
       finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [retry]);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
@@ -84,7 +87,8 @@ const Dashboard: React.FC = () => {
         <p className="type-body-small" style={{ color: 'var(--md-on-surface-variant)' }}>Carregando...</p>
       )}
 
-      {!loading && (
+      {loadError && <LoadError message={loadError} onRetry={() => { setLoadError(''); setLoading(true); setRetry(retry + 1); }} />}
+      {!loading && !loadError && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* O que exige ação agora */}

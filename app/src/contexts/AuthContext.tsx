@@ -4,6 +4,7 @@ import {
   pedirArmazenamentoPersistente,
 } from '../services/pocketbase';
 import type { RecordModel } from 'pocketbase';
+import toast from 'react-hot-toast';
 
 interface AuthContextType {
   user: RecordModel | null;
@@ -11,7 +12,7 @@ interface AuthContextType {
   authenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -44,9 +45,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     pedirArmazenamentoPersistente();
   }, []);
 
-  const logout = useCallback(() => {
-    signOut();
-    setUser(null);
+  const logout = useCallback(async () => {
+    try { await signOut(); }
+    catch { toast.error('Você saiu da conta. Não foi possível concluir a limpeza das notificações.'); }
   }, []);
 
   const refreshUser = useCallback(async () => {

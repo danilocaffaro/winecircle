@@ -1,0 +1,32 @@
+{
+  "_leia": "Perfis de worktree deste projeto. O agente lê isto e monta o comando; o humano fala em português. Papel = permissão + escopo + entregável.",
+  "implementador": {
+    "agent": "claude",
+    "parent": "active",
+    "setup": "run",
+    "escrita": true,
+    "prompt": "Implemente a fatia pedida NESTE worktree. Escreva o teste junto com o código — não delegue o teste. Rode `npm run verify` antes de dizer que terminou. Checkpoint ao virar de fase. Não commite na main, não use --no-verify, não faça merge."
+  },
+  "revisor": {
+    "agent": "codex",
+    "parent": "active",
+    "setup": "skip",
+    "escrita": false,
+    "prompt": "Revisor. NÃO altere arquivos (só leitura; git de leitura permitido). Escopo: o diff da branch indicada contra main. Entregue lista de achados com arquivo:linha e o porquê de cada um. Não conserte o que encontrar. Se não achar nada, diga isso — não invente achado para justificar a rodada."
+  },
+  "revisor-seguranca": {
+    "agent": "claude",
+    "parent": "active",
+    "setup": "skip",
+    "escrita": false,
+    "_lente": "roda em paralelo com os outros revisores sobre o MESMO diff, sem conversar com eles",
+    "prompt": "Revisor com lente de SEGURANÇA. NÃO altere arquivos. Escopo: o diff da branch indicada. Procure: credencial ou chave no bundle ou no código, dado de usuário exposto, regra de acesso do PocketBase enfraquecida, entrada não validada. Entregue achados com arquivo:linha. Ignore estilo e performance — outra lente cuida disso."
+  },
+  "pesquisa": {
+    "agent": "claude",
+    "parent": "none",
+    "setup": "skip",
+    "escrita": false,
+    "prompt": "Levantamento. NÃO mexa no código do produto. Entregue um documento com as fontes citadas e a recomendação separada dos fatos."
+  }
+}

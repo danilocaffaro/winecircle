@@ -38,7 +38,11 @@ export function calculateBorda(wines: Wine[], ratings: Rating[]): BordaResult[] 
     b.firstPlaces - a.firstPlaces ||
     a.wineIndex - b.wineIndex,
   );
-  results.forEach((r, i) => { r.rank = i + 1; });
+  results.forEach((r, i) => {
+    const previous = results[i - 1];
+    r.rank = previous && previous.totalPoints === r.totalPoints && previous.firstPlaces === r.firstPlaces
+      ? previous.rank : i + 1;
+  });
 
   return results;
 }

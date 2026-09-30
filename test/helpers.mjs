@@ -15,7 +15,8 @@ const ADMIN = process.env.WC_TEST_PB_ADMIN || 'test@local.dev';
 const ADMIN_PASS = process.env.WC_TEST_PB_PASSWORD || 'TesteLocal2026!';
 
 function assertLocal(url, label) {
-  const ok = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/.test(url);
+  const parsed = new URL(url);
+  const ok = ['http:', 'https:'].includes(parsed.protocol) && ['127.0.0.1', 'localhost'].includes(parsed.hostname);
   if (!ok) {
     throw new Error(
       `RECUSANDO RODAR: ${label} aponta para "${url}", que não é local.\n` +
@@ -28,7 +29,7 @@ assertLocal(BASE_URL, 'WC_TEST_BASE_URL');
 
 let adminToken = null;
 
-async function api(path, { method = 'GET', body, token } = {}) {
+export async function api(path, { method = 'GET', body, token } = {}) {
   const res = await fetch(`${PB_URL}${path}`, {
     method,
     headers: {
@@ -62,7 +63,7 @@ export async function adminAuth() {
 export async function resetDatabase() {
   const token = await adminAuth();
   // Ordem importa: filhos antes dos pais, para não brigar com cascade.
-  for (const coll of ['wc_payments', 'wc_expenses', 'wc_ratings', 'wc_events', 'wc_clubs', 'users']) {
+  for (const coll of ['wc_push_subs', 'wc_payments', 'wc_expenses', 'wc_ratings', 'wc_events', 'wc_clubs', 'users']) {
     let page = await api(`/api/collections/${coll}/records?perPage=200`, { token });
     while (page.items.length) {
       for (const item of page.items) {
